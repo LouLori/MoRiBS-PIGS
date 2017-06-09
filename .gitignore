@@ -1,7 +1,7 @@
 #ignore all object files
 *.o
 #ignore executable
-pimc
+pimc*
 bb*
 fort.*
 *.txt
@@ -12,14 +12,33 @@ aa.f
 *2.cc
 test-hfhf.f
 #ignore
+/linear_prop/linden.x
+/linear_prop/qpr.x
 /examples/linear_pigs/results/
 /examples/linear_pigs/yw001.*
 /examples/linear_pigs/Input*
 /examples/linear_pigs/*.txt*
+/examples/linear_pigs/*.png*
 /examples/linear_pigs/a.out
 /examples/linear_pigs/*exe
+/examples/linear_pigs/jobsubmit_*
+/examples/linear_pigs/*.input
+/examples/linear_pigs/*.rot
+/examples/linear_pigs/*.out
+/examples/linear_pigs/*.dof
+/examples/linear_pigs/*.eng
+/examples/linear_pigs/*.rden
+/examples/linear_pigs/outpimc*
+/examples/linear_pigs/ts
 /examples/linear_pigs/*/
 !/examples/linear_pigs/
+/examples/test_run/
+examples/linear_pigs/entanglement_*particleA_*jobsubmit_*
+examples/linear_pigs/submission-and-analysis-fixed-tau-cpu-for-test.py
+mc_main-original.cc
+mc_piqmc-correct.cc
+mc_piqmc-modified.cc
+mc_estim-modified.cc
 #
 /examples/nonlinear_pigs/results/*
 !/examples/nonlinear_pigs/results/

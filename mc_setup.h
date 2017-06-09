@@ -41,6 +41,12 @@ extern double  Temperature;
 #ifdef GETR
 extern double  Distance;
 #endif
+#ifdef GETDIPOLE
+extern double DipoleMoment;
+#endif
+#ifdef TEST
+extern int     NumbParticle;
+#endif
 extern double  Density;
 extern double  BoxSize;
 
@@ -161,9 +167,8 @@ extern int NThreads; // the number of threads as a global variable
 extern int MCSKIP_RATIO;     //  to save information regarding the accept ratio
 extern int MCSKIP_TOTAL;     //  to save accumulated average
 extern int MCSKIP_AVERG;     //  to evaluate averages
-#ifdef PIGSROTORSIO
 extern int DISTANCE;     //  to evaluate averages
-#endif
+extern int NUMBPARTICLE;     //  to evaluate averages
 
 // MC move types
 const int MCMAXMOVES = 3;   // Max number of different types of MC moves

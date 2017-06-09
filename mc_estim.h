@@ -20,13 +20,21 @@ void SaveRhoThetaChi(const char [], double,int); //added by Toby Zeng
 double GetPotEnergy_Diff(void); //added by Hui Li
 
 double GetPotEnergy_Densities(void);
+double GetPotEnergyPIGS(void);
 double GetTotalEnergy(void);
-void   GetTotalEnergy1(double &spot, double &spotl, double &spotr);
-double GetCosTheta(void);
-void   GetCosTheta1(double &dipole, double &dipole1);
-double GetPhi(void);
+double *GetCosTheta();
+double GetPhi();
 double GetPotEnergy(void);
 double GetKinEnergy(void);
+#ifdef ENTANGLEMENT
+double GetPotEnergy_Entanglement(int atom0, int atom1);
+double GetEstimNM(void);
+double GetEstimNM1(void);
+double GetEstimDM(void);
+double GetEstimDM1(void);
+double *GetCosThetaEntanglement();
+double *GetPhiEntanglement();
+#endif
 
 double GetConfPoten_Densities(void); // HA test
 
@@ -77,5 +85,5 @@ extern double srotsum; // total summation of rotational energy
 void VectorNormalisation(double *);
 double DotProduct(double *, double *);
 void CrossProduct(double *, double *, double *);
-double PotFunc(double ,double *, double *);
+double PotFunc(double *, double *, double);
 #endif  // mc_estim.h

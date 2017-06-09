@@ -15,43 +15,52 @@ import support
 #   Change the parameters as you requied.                                      |
 #                                                                              |
 #===============================================================================
-#molecule            = "HF-C60"                                                    #change param1
-molecule            = "HF"                                                         #change param1
-#molecule            = "H2"                                                        #change param1
+TypeCal             = 'PIMC'
+#TypeCal             = 'PIGS'
+#TypeCal             = 'ENT'
+
+#molecule            = "HF-C60"                                                  
+molecule            = "HF"                                                      
+#molecule            = "H2"                                                    
 molecule_rot        = "HF"
+
 #print 5/(support.bconstant(molecule_rot)/0.695)
 #print 7/(support.bconstant(molecule_rot)/0.695)
 #exit()
-numbblocks	        = 20000                                                        #change param2
-numbmolecules       = 1                                                            #change param3
-beta     	        = 0.128                                                        #change param4
-Rpt                 = 2.0                                                        #change param7
 
-status              = "submission"                                                 #change param9
-status              = "analysis"                                                   #change param10
-status_rhomat       = "Yes"                                                        #change param10 
+numbblocks	        = 10                                                      
+numbmolecules       = 2
+numbpass            = 10
+beta     	        = 0.1                                                       
 
-nrange              = 8 		  						                           #change param12
+Rpt                 = 5.0                                                     
+dipolemoment        = 1.86
+skip                = 10
 
-if (molecule_rot == "H2"):
-	#step           = [1.5,3.0,3.0,3.0,3.0,2.6,2.3,2.5,2.02] #temp 10K             #change param6
-	#step           = [1.5,3.0,3.0,2.5,1.5,1.0,0.7,2.5,2.02] #temp 50K             #change param6
-	step            = [1.5,3.0,3.0,2.0,1.0,0.7,0.5,2.5,2.02] #temp 100K            #change param6
-	file1_name      = "Rpt"+str(Rpt)+"Angstrom-beta"+str(beta)+"Kinv-Blocks"+str(numbblocks)+"-System"+str(numbmolecules)+str(molecule)+"-e0vsbeads"
+status              = "submission"                                            
+#status              = "analysis"                                            
+status_rhomat       = "Yes"                                                 
+#RUNDIR              = "work"
+RUNDIR              = "scratch"
 
-if (molecule_rot == "HF"):
-	#step           = [0.7,1.4,2.3,4.2,7.8,5.0,2.5,1.5,0.2]  # 2 HF beta 0.512 K-1 #change param6
-	#step           = [0.7,3.0,5.0,8.5,5.0,3.0,1.6,1.0,0.2]  # 2 HF beta 0.256 K-1 #change param6
-	#step           = [0.7,7.0,9.5,5.5,3.0,1.5,1.0,0.6,0.2]  # 2 HF beta 0.128 K-1 #change param6
-	#step            = [3.0,1.0,1.5,3.0,3.0,3.0,2.3,1.5,0.2] # 1 HF beta 0.512 K-1 #change param6
-	#step            = [3.0,2.0,3.0,3.0,3.0,2.5,1.5,1.1,2.0] # 1 HF beta 0.256 K-1 #change param6
-	#step            = [3.0,3.0,3.0,3.0,3.0,1.8,1.1,0.8,2.0] # 1 HF beta 0.128 K-1 Rpt = 10.05 #change param6
-	#step            = [1.0, 0.03, 0.05, 0.08, 0.17, 0.25, 0.3, 0.3, 2.0] # 1 HF beta 0.128 K-1 Rpt = 2.0 #change param6
-	#step            = [1.0, 0.5, 0.8, 1.0, 1.2, 1.2, 0.85, 0.6, 2.0] # 1 HF beta 0.128 K-1 Rpt = 5.0 #change param6
-	step            = [3.0,4.0,4.5,4.0,3.0,1.8,1.1,0.8,2.0] # 1 HF beta 0.128 K-1 Rpt = 10.0 #change param6
-	file1_name      = "Rpt"+str(Rpt)+"Angstrom-beta"+str(beta)+"Kinv-Blocks"+str(numbblocks)
+nrange              = 101 		  						                          
+trunc               = numbblocks
+preskip             = 2000
+
+if (TypeCal == "PIGS"):
+	file1_name      = "Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-beta"+str(beta)+"Kinv-Blocks"+str(numbblocks)
 	file1_name     += "-System"+str(numbmolecules)+str(molecule)+"-e0vsbeads" 
-	#file1_name      = "test"
+
+if (TypeCal == "PIMC"):
+	file1_name      = "PIMC-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-beta"+str(beta)+"Kinv-Blocks"+str(numbblocks)
+	file1_name     += "-System"+str(numbmolecules)+str(molecule)+"-e0vsbeads" 
+
+
+if (TypeCal == "ENT"):
+	numbmolecules  *= 2
+	file1_name      = "Entanglement-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-beta"+str(beta)+"Kinv-Blocks"+str(numbblocks)
+	file1_name     += "-System"+str(numbmolecules)+str(molecule)+"-e0vsbeads" 
+
 
 file2_name          = ""                                                           #change param10
 argument2           = "beads"                                                      #change param11
@@ -62,8 +71,24 @@ src_path            = os.getcwd()
 dest_path           = "/work/tapas/linear_rotors/"                                 #change param13
 run_file            = "/home/tapas/Moribs-pigs/MoRiBS-PIMC/pimc"                   #change param14
 
+if status   == "submission":
+	if RUNDIR == "scratch":
+		dest_path   = "/scratch/tapas/linear_rotors/" 
+
+final_path          = "/work/tapas/linear_rotors/"                                 #change param17
+
 temperature         = 1.0/beta   
-trunc               = 10000
+
+
+#==================================== MCStep ===================================# 
+if (molecule_rot == "H2"):
+	#step           = [1.5,3.0,3.0,3.0,3.0,2.6,2.3,2.5,2.02] #temp 10K             #change param6
+	#step           = [1.5,3.0,3.0,2.5,1.5,1.0,0.7,2.5,2.02] #temp 50K             #change param6
+	step            = [1.5,3.0,3.0,2.0,1.0,0.7,0.5,2.5,2.02] #temp 100K            #change param6
+
+if (molecule_rot == "HF"):
+	step           = [2.0,2.0,1.5,1.3,1.0,1.5,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.0,1.0,1.0,1.0,1.0]  # 2 HF beta 0.2 K-1 #change param6 for 10 Angstrom PIGS
+	#step           = [0.7, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.5, 1.5, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.0, 1.0, 1.0, 1.0, 1.0]  # 2 HF beta 0.2 K-1 #change param6 for 10 Angstrom PIMC
 
 #===============================================================================
 #                                                                              |
@@ -72,88 +97,131 @@ trunc               = 10000
 #                                                                              |
 #===============================================================================
 if status == "submission":
+	dest_pimc = "/work/tapas/linear_rotors/"+file1_name+"PIMC"
+	call(["rm", "-rf",  dest_pimc])
+	call(["mkdir", "-p", dest_pimc])
+	call(["cp", run_file, dest_pimc])
 	if status_rhomat == "Yes":
 		support.compile_rotmat()
 
-#===============================================================================
-#                                                                              |
-#   Analysis of output files 												   |
-#                                                                              |
-#===============================================================================
 if status == "analysis":
-	file_output          = "Energy-vs-tau-"+str(numbmolecules)+"-"+str(molecule)
-	file_output         += "-fixed-beta"+str(beta)+"-blocks"+str(numbblocks)+"Rpt"+str(Rpt)+"Angstrom.txt"  
-	file_output_angularDOF = "AngularDOF-vs-tau-"+str(numbmolecules)+"-"+str(molecule)
-	file_output_angularDOF+= "-fixed-beta"+str(beta)+"-blocks"+str(numbblocks)+"Rpt"+str(Rpt)+"Angstrom.txt"  
-	call(["rm", file_output, file_output_angularDOF])
+	if (TypeCal == "PIGS"):
+		file_output             = "Energy-vs-"+str(var)+"-fixed-"
+		file_output            += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
+		file_output            += "-System"+str(numbmolecules)+str(molecule)+"-trunc"+str(trunc)+".txt"
 
-	fanalyze             = open(file_output, "a")           
-	fanalyze.write(support.fmt_energy(status,var))
+		file_output_angularDOF  = "AngularDOF-vs-"+str(var)+"-fixed-"
+		file_output_angularDOF += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
+		file_output_angularDOF += "-System"+str(numbmolecules)+str(molecule)+"-trunc"+str(trunc)+".txt"
+	
+		file_output_angularDOF1  = "AngularDOF-vs-"+str(var)+"-fixed-"
+		file_output_angularDOF1 += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
+		file_output_angularDOF1 += "-System"+str(numbmolecules)+str(molecule)+"-trunc"+str(trunc)+"-for-zdir.txt"
+	
+		call(["rm", file_output, file_output_angularDOF, file_output_angularDOF1])
+	
+	
+	if (TypeCal == "PIMC"):
+		file_output             = "PIMC-Energy-vs-"+str(var)+"-fixed-"
+		file_output            += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
+		file_output            += "-System"+str(numbmolecules)+str(molecule)+"-trunc"+str(trunc)+".txt"
 
-	fanalyze_angularDOF  = open(file_output_angularDOF, "a")           
-	fanalyze_angularDOF.write(support.fmt_angle(status,var))
+		file_output_angularDOF  = "PIMC-AngularDOF-vs-"+str(var)+"-fixed-"
+		file_output_angularDOF += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
+		file_output_angularDOF += "-System"+str(numbmolecules)+str(molecule)+"-trunc"+str(trunc)+".txt"
 
+		file_output_angularDOF1  = "PIMC-AngularDOF-vs-"+str(var)+"-fixed-"
+		file_output_angularDOF1 += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
+		file_output_angularDOF1 += "-System"+str(numbmolecules)+str(molecule)+"-trunc"+str(trunc)+"-for-zdir.txt"
 
+		call(["rm", file_output, file_output_angularDOF, file_output_angularDOF1])
+
+	
+	if (TypeCal == "ENT"):
+		file_output      = "Entropy-vs-"+str(var)+"-fixed-"
+		file_output     += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
+		file_output     += "-System"+str(numbmolecules)+str(molecule)+"-trunc"+str(trunc)+".txt"
+		call(["rm", file_output])
+	
+	
+	if (TypeCal == "ENT"):
+		fanalyze             = open(file_output, "a")
+		fanalyze.write(support.fmt_entropy(status,var))
+	else:
+		fanalyze             = open(file_output, "a")           
+		fanalyze.write(support.fmt_energy(status,var))
+		fanalyze_angularDOF  = open(file_output_angularDOF, "a")           
+		fanalyze_angularDOF.write(support.fmt_angle(status,var))
+		fanalyze_angularDOF1  = open(file_output_angularDOF1, "a")           
+	#support.FileOutput(status, TypeCal, var, beta, Rpt, dipolemoment, numbblocks, numbmolecules, molecule, trunc)
 
 # Loop over jobs
-for i in range(nrange):                                                  #change param13
-	if (i>0):
- 
-		value        = pow(2,i) + value_min
+for i in range(nrange):                                                
 
-		numbbeads    = support.dropzeros(value)
-	
-		tau          = beta/(value-1)
+	if (TypeCal == 'PIMC'):
 
-		folder_run   = file1_name+str(numbbeads)+file2_name
-		dest_dir     = dest_path + folder_run 
+		if (i>1 and i%skip == 0):
+			value = i
+			tau          = beta/value
+			numbbeads    = value
+			folder_run   = file1_name+str(numbbeads)+file2_name
+			dest_dir     = dest_path + folder_run 
 
-		if status == "submission":
-			os.chdir(dest_path)
-			call(["rm", "-rf", folder_run])
-			call(["mkdir", folder_run])
-			call(["mkdir", "-p", folder_run+"/results"])
-			os.chdir(src_path)
+			if status   == "submission":
+				support.Submission(status, RUNDIR, dest_path, folder_run, src_path, run_file, dest_dir, Rpt, numbbeads, i, skip, step, temperature,numbblocks,numbpass,molecule_rot,numbmolecules,dipolemoment, status_rhomat, TypeCal, argument2, final_path, dest_pimc)
 
+			if status == "analysis":
 
-			# copy files to running folder
-			src_file      = src_path + "/IhRCOMC60.xyz"
-			call(["cp", src_file, dest_dir])
-			call(["cp", run_file, dest_dir])
+				variable          = tau
+				try:
+					if (TypeCal == "ENT"):
+						fanalyze.write(support.outputstr_entropy(numbbeads,variable,dest_dir,trunc,preskip))
+					else:
+						fanalyze.write(support.outputstr_energy(numbbeads,variable,dest_dir,trunc,preskip))
+						fanalyze_angularDOF.write(outputstr_angle(support.numbbeads,variable,dest_dir,trunc,preskip))
+						fanalyze_angularDOF1.write(outputstr_angle1(support.numbbeads,variable,dest_dir,trunc,preskip))
+				except:
+					pass
+	else:
+		if (i>1 and i % skip == 0 ):
 
-			src_file      = src_path + "/qmc_run.input"
-			call(["cp", src_file, dest_dir])
+			if i % 2 != 0:
+				value        = i
+			else:
+				value        = i+value_min
+			tau          = beta/(value-1)
+			numbbeads    = value
+			folder_run   = file1_name+str(numbbeads)+file2_name
+			dest_dir     = dest_path + folder_run 
 
-			# Write submit file for the current cycle
-			os.chdir(dest_dir)
-			argument1     = Rpt
-			level         = support.levels(numbbeads)
-			step1         = step[i]
-			support.modify_input(temperature,numbbeads,numbblocks,molecule_rot,numbmolecules,argument1,level,step1)
-			if status_rhomat == "Yes":
-				support.rotmat(molecule_rot,temperature,numbbeads)
-	
-			#job submission
-			fname         = 'submit_'+str(i)
-			fwrite        = open(fname, 'w')
-	
-			fwrite.write(support.jobstring(argument2,numbbeads,numbmolecules))
+			if status   == "submission":
+				support.Submission(status, RUNDIR, dest_path, folder_run, src_path, run_file, dest_dir, Rpt, numbbeads, i, skip, step, temperature,numbblocks,numbpass,molecule_rot,numbmolecules,dipolemoment, status_rhomat, TypeCal, argument2, final_path, dest_pimc)
 
-			fwrite.close()
-			call(["qsub", fname, ])
-			os.chdir(src_path)
+			if status == "analysis":
 
-
-		if status == "analysis":
-
-			variable = tau
-			fanalyze.write(support.outputstr_energy(numbbeads,variable,dest_dir,trunc))
-			fanalyze_angularDOF.write(support.outputstr_angle(numbbeads,variable,dest_dir,trunc))
+				variable          = tau
+				try:
+					if (TypeCal == "ENT"):
+						fanalyze.write(support.outputstr_entropy(numbbeads,variable,dest_dir,trunc,preskip))
+					else:
+						fanalyze.write(support.outputstr_energy(numbbeads,variable,dest_dir,trunc,preskip))
+						fanalyze_angularDOF.write(support.outputstr_angle(numbbeads,variable,dest_dir,trunc,preskip))
+						fanalyze_angularDOF1.write(support.outputstr_angle1(numbbeads,variable,dest_dir,trunc,preskip))
+				except:
+					pass
 
 if status == "analysis":
+#	support.FileClose(TypeCal)
 	fanalyze.close()
-	fanalyze_angularDOF.close()
+	if (TypeCal != "ENT"):
+		fanalyze_angularDOF.close()
+		fanalyze_angularDOF1.close()
 	call(["cat",file_output])
+'''
 	print
 	print
 	call(["cat",file_output_angularDOF])
+	print
+	print
+	call(["cat",file_output_angularDOF1])
+'''

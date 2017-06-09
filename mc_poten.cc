@@ -570,6 +570,13 @@ void init_rotdens(int type)
 
 double SRotDens(double gamma,int type)   // rotational density matrix 
 {
+   double rdens;
+
+#ifdef DENSONE
+	rdens = 1.0;
+	return rdens;
+#endif
+
    int size = _rotsize[type];
 
    if (gamma > _rotgrid[type][size-1])   // replace with extrapolation ?  
@@ -577,7 +584,9 @@ double SRotDens(double gamma,int type)   // rotational density matrix
 
    if (gamma < _rotgrid[type][0])
    { 
-//    return (_rotdens[type][0]);
+#ifdef MODIFYSROTDENS
+      return (_rotdens[type][0]);
+#else
       double rl = _rotgrid [type][0];
       double rr = _rotgrid [type][1];
    
@@ -585,9 +594,9 @@ double SRotDens(double gamma,int type)   // rotational density matrix
       double sbeta  = (_rotdens[type][0]*rr - _rotdens[type][1]*rl)/(rr-rl);
      
       return (salpha*gamma + sbeta);
+#endif
    }
 
-   double rdens;
    splint(_rotgrid[type],_rotdens[type],_rotdens_drv2[type],size,gamma,rdens);
    return rdens;
 }
@@ -597,13 +606,18 @@ double SRotDensDeriv(double gamma,int type) // the derivs of the rotational dens
    int  size = _rotsize[type];
 
    if (gamma > _rotgrid[type][size-1])      // replace with extrapolation ?  
-// return (_rotderv[type][size-1]);
+#ifdef MODIFYSROTDENS
+   return (_rotderv[type][size-1]);
+#else
    return 0.0;
+#endif
 
 
    if (gamma < _rotgrid[type][0])
    { 
-//    return (_rotderv[type][0]);
+#ifdef MODIFYSROTDENS
+      return (_rotderv[type][0]);
+#else
       double rl = _rotgrid [type][0];
       double rr = _rotgrid [type][1];
    
@@ -611,6 +625,7 @@ double SRotDensDeriv(double gamma,int type) // the derivs of the rotational dens
       double sbeta  = (_rotderv[type][0]*rr - _rotderv[type][1]*rl)/(rr-rl);
      
       return (salpha*gamma + sbeta);
+#endif
    }
 
    double rderv;

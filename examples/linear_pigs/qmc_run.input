@@ -50,13 +50,15 @@ ROTATION   molecule_input    dstep_input   numbbeads_input
 
 NUMBEROFSLICES     numbbeads_input     #  number of time slices
 
-NUMBEROFPASSES     100       #  number of passes per block
+NUMBEROFPASSES     numbpass_input       #  number of passes per block
 NUMBEROFBLOCKS     numbblocks_input  0  #5000 0      #  number of blocks and number of equil blocks
 
 # number of MC steps to skip (mc_setup)
 
-MCSKIP_RATIO     200       # to save information regarding accept ratio
-MCSKIP_TOTAL     200        # to save accumulated average
-MCSKIP_AVERG     200        # to evaluate averages
+MCSKIP_RATIO     mskip_input     # to save information regarding accept ratio
+MCSKIP_TOTAL     mskip_input     # to save accumulated average
+MCSKIP_AVERG     mskip_input       # to evaluate averages
 #BLOCKSKIP_2D	 2	        # skipped blocks to save 2D densities
 DISTANCE         distance_input
+DIPOLEMOMENT     dipolemoment_input
+NUMBPARTICLE    numbparticle_input

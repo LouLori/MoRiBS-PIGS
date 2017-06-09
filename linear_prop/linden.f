@@ -20,7 +20,8 @@ c     read(5,*)temprt,nslice,bconst,npt,iodevn
       call getarg(5,argum)
       read(argum,*)iodevn
 c ... calculate tau
-      tau=taunit/(temprt*nslice)
+c.... unit of tau is cm and bconst is cm-1 
+      tau=taunit/(temprt*nslice)  
       write(6,'(''tau='',f10.5)')tau
 
 c ... judge the maximam l quantum number
@@ -64,8 +65,21 @@ c       enddo
 c       rho=rho/(4.0*Pi)
         call exarho(cost,lmax,maxl,pl,rho,erot1,tau,bconst,iodevn,
      +       nslice,erotsq)
+        erotf = erot1/rho
 c       call ratrho(cost,tau,bconst,rho2,erot2,iodevn,nslice)
-        write(7,'(1p,7(1x,E15.8))')cost,rho,erot1,erotsq
+c        dtau = tau/10000.0d0
+c        taup = tau + dtau
+c        call exarho(cost,lmax,maxl,pl,rhop,erot1,taup,bconst,iodevn,
+c     +       nslice,erotsq)
+c        taum = tau - dtau
+c        call exarho(cost,lmax,maxl,pl,rhom,erot1,taum,bconst,iodevn,
+c     +       nslice,erotsq)
+c        erot2 = 0.5d0*log(rhom/rhop)/dtau
+c        boltz=0.69503476d0
+c        erot2 = erot2/(nslice*boltz)
+c        write(7,'(1p,7(1x,E15.8))')cost,rho,erot2,erotsq
+        write(7,'(1p,7(1x,E15.8))')cost,rho,erotf,erotsq
+        
       enddo
       close(7,status='keep')
 

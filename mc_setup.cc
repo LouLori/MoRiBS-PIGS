@@ -43,6 +43,12 @@ double  Temperature;
 #ifdef GETR
 double Distance;
 #endif
+#ifdef GETDIPOLE
+double DipoleMoment;
+#endif
+#ifdef TEST
+int NumbParticle;
+#endif
 
 double  Density;
 double  BoxSize;
@@ -139,7 +145,9 @@ int       MOLECINCAGE;  // integer flag for the molecule in a cage
 int       InitMCCoords; // integer flag for read in MCCoords;
 
 //----------------------------------------------------------
-
+#ifdef CHAINCONFIG
+void initChain_config(double **);
+#endif
 void initLattice_config(double **);
 void replInitial_config(double **);
 
@@ -463,7 +471,11 @@ void MCConfigInit(void)
 	const char *_proc_=__func__;    // "MCConfigInit()";
 
 #ifndef HOSC_TEST
+#ifdef CHAINCONFIG
+	initChain_config(MCCoords); 
+#else
 	initLattice_config(MCCoords); 
+#endif
 	replInitial_config(MCCoords);
 
 	if (NDIM != 3) nrerror(_proc_,"Only 3D for rotational coordinates");
@@ -604,41 +616,84 @@ void initLattice_config(double **pos)
 	}    // END loop over types
 }
 
- /*  no difference between atoms and molecules in the code below
+#ifdef CHAINCONFIG
+void initChain_config(double **pos)
+{
+	cout<<"in initChain"<<endl;
+	const char *_proc_ = __func__;    // "initChain_config";
 
-     void initLattice_config(double **pos, int nslices)
-     // generate a cubic lattice if NumbAtoms = m^3, m - integer	
-     // nslices = Number of time slices	
-     {
-     const char *_proc_ = __func__;    // "initLattice_config";
- 
-     // box size per particle: 
-     double abox = BoxSize/pow((double)NumbAtoms,1.0/(double)NDIM); 
-     double shift[NDIM];
+    double shift[NDIM];
+    for (int id = 0; id < NDIM; id++)
+    {
+	    shift[id] = 0.0;
+    }
 
-     for (int id=0;id<NDIM;id++)
-     shift[id] = 0.5*abox;  
-    
-     int max = NumbAtoms*nslices; 
+	int NumbAtoms1;
+#ifdef ENTANGLEMENT
+    NumbAtoms1 = NumbAtoms/2;
+#else
+	NumbAtoms1 = NumbAtoms;
+#endif
 
-     for (int atom=0;atom<max;atom+=nslices)
-     {  
-     for (int id=0;id<(NDIM-1);id++) 
-     if (shift[id] > BoxSize) {shift[id] = 0.5*abox; shift[id+1] += abox;}
- 
-     for (int id=0;id<NDIM;id++)   // set the center of the box at the origin
-     pos[id][atom] = shift[id] - 0.5*BoxSize;
- 
-     shift[0] += abox;
-     }
-     }
- */
+    for (int atom = 0; atom < NumbAtoms1; atom++)
+    {
+        for (int it = 0; it < NumbTimes; it++)
+        {
+            int ii = it + atom*NumbTimes;
+   		    for (int id = 0; id < NDIM; id++)   // set the center of the box at the origin
+    	    {
+	            pos[id][ii] = shift[id];
+	        }
+        }
+		shift[2] += Distance;
+    }
+#ifdef ENTANGLEMENT
+    for (int id = 0; id < NDIM; id++)
+    {
+	    shift[id] = 0.0;
+    }
 
- void replInitial_config(double **pos)
- // replicate configurations for all time slices
- {
-  for (int id=0;id<NDIM;id++)	
-    for (int atom=0;atom<NumbAtoms;atom++)
-      for (int it=1;it<NumbTimes;it++)
-	pos[id][atom*NumbTimes+it] = pos[id][atom*NumbTimes];	  
+    for (int atom = NumbAtoms1; atom < NumbAtoms; atom++)
+    {
+        for (int it = 0; it < NumbTimes; it++)
+        {
+            int ii = it + atom*NumbTimes;
+   		    for (int id = 0; id < NDIM; id++)   // set the center of the box at the origin
+    	    {
+	            pos[id][ii] = shift[id];
+	        }
+        }
+		shift[2] += Distance;
+    }
+
+    shift[2] -= Distance;
+    for (int atom = 0; atom < NumbAtoms1; atom++)
+    {
+        for (int it = 0; it < NumbTimes; it++)
+        {
+            int ii = it + atom*NumbTimes;
+   		    for (int id = 0; id < NDIM; id++)   // set the center of the box at the origin
+    	    {
+	            pos[id][ii] = shift[id];
+	        }
+        }
+		shift[2] -= Distance;
+    }
+#endif
+}
+#endif
+
+void replInitial_config(double **pos)
+// replicate configurations for all time slices
+{
+    for (int id = 0; id < NDIM; id++)	
+    {
+        for (int atom = 0; atom < NumbAtoms; atom++)
+        {
+            for (int it = 0; it < NumbTimes; it++)
+            {
+	            pos[id][atom*NumbTimes+it] = pos[id][atom*NumbTimes];
+            }
+        }
+    }
 }	

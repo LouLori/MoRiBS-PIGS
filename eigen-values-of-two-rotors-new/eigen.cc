@@ -711,28 +711,6 @@ void normCheckGroundState(int nSizeTotal, double *cosTheta, double *weightsTheta
 				sump2 = 0.0;
                 for (int iPhiRotor2     = 0; iPhiRotor2<2*nSize+1; iPhiRotor2++)
                 {
-                    double Eulang_1[3];
-                    double Eulang_2[3];
-                    double com_1[3];
-                    double com_2[3];
-
-                    Eulang_1[0] = phi[iPhiRotor1];
-                    Eulang_1[1] = theta1;
-                    Eulang_1[2] = 0.0;
-                    Eulang_2[0] = phi[iPhiRotor2];
-                    Eulang_2[1] = theta2;
-                    Eulang_2[2] = 0.0;
-
-                    //units of com_1 and com_2 are Angstrom
-                    com_1[0]    = 0.0;
-                    com_1[1]    = 0.0;
-                    com_1[2]    = 0.0;
-                    com_2[0]    = 0.0;
-                    com_2[1]    = 0.0;
-                    com_2[2]    = 10.05;
-                    double E12;
-                    cluster_(com_1, com_2, Eulang_1, Eulang_2, &E12);
-                    double vpot                 = E12/autoKelvin;
 
         			sump2 +=  psiRe[index]*vpot*psiRe[index]+psiIm[index]*vpot*psiIm[index];
 					index++;
