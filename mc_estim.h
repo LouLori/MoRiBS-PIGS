@@ -35,6 +35,7 @@ double GetEstimDM1(void);
 double *GetCosThetaEntanglement();
 double *GetPhiEntanglement();
 #endif
+double *GetProdUvec12();
 
 double GetConfPoten_Densities(void); // HA test
 

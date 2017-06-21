@@ -43,9 +43,7 @@ double  Temperature;
 #ifdef GETR
 double Distance;
 #endif
-#ifdef GETDIPOLE
 double DipoleMoment;
-#endif
 #ifdef TEST
 int NumbParticle;
 #endif
@@ -616,7 +614,6 @@ void initLattice_config(double **pos)
 	}    // END loop over types
 }
 
-#ifdef CHAINCONFIG
 void initChain_config(double **pos)
 {
 	cout<<"in initChain"<<endl;
@@ -681,7 +678,6 @@ void initChain_config(double **pos)
     }
 #endif
 }
-#endif
 
 void replInitial_config(double **pos)
 // replicate configurations for all time slices

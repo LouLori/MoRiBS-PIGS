@@ -14,6 +14,8 @@ test-hfhf.f
 #ignore
 /linear_prop/linden.x
 /linear_prop/qpr.x
+/linear_prop/linden.out
+/linear_prop/linden-original.f
 /examples/linear_pigs/results/
 /examples/linear_pigs/yw001.*
 /examples/linear_pigs/Input*
@@ -31,6 +33,7 @@ test-hfhf.f
 /examples/linear_pigs/outpimc*
 /examples/linear_pigs/ts
 /examples/linear_pigs/*/
+examples/linear_pigs/support.pyc
 !/examples/linear_pigs/
 /examples/test_run/
 examples/linear_pigs/entanglement_*particleA_*jobsubmit_*

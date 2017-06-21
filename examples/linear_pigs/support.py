@@ -268,25 +268,11 @@ def rotmat(TypeCal,molecule,temperature,numbbeads):
 		numbbeads1		= numbbeads
 	else:
 		numbbeads1		= numbbeads - 1
-	command_linden_run = "/home/tapas/Moribs-pigs/MoRiBS-PIMC/linear_prop/linden.x "+str(temperature)+" "+str(numbbeads1)+" "+str(bconstant(molecule))+" 60000 -1"
+	command_linden_run = "/home/tapas/Moribs-pigs/MoRiBS-PIMC/linear_prop/linden.x "+str(temperature)+" "+str(numbbeads1)+" "+str(bconstant(molecule))+" 150000 -1"
 	print command_linden_run
 	system(command_linden_run)
 	file_rotdens    = molecule+"_T"+str(temperature1)+"t"+str(numbbeads)+".rot"
 	call(["mv", "linden.out", file_rotdens])
-
-def rotmat1(molecule,temperature,numbbeads):
-	'''
-	This function generates rotational density matrix - linden.dat
-	'''
-	#temperature1    = dropzeros(temperature)
-	temperature1    = "%5.3f" % temperature
-	if (TypeCal == 'PIMC'):
-		numbbeads1		= numbbeads
-	else:
-		numbbeads1		= numbbeads - 1
-	command_linden_run = "/home/tapas/Moribs-pigs/MoRiBS-PIMC/linear_prop/linden.x "+str(temperature)+" "+str(numbbeads1)+" "+str(bconstant(molecule))+" 3000 -1"
-	print command_linden_run
-	system(command_linden_run)
 
 def jobstring_scratch(file_name, value, thread, run_dir, molecule, temperature, numbbeads, final_dir, dest_pimc):
 	'''
@@ -346,16 +332,38 @@ def outputstr_entropy(numbbeads,tau,dest_dir,trunc,preskip,ENT_TYPE):
 		output  += "\n"
 
 	if ENT_TYPE == "SWAP":
-		col_block, col_Tr = genfromtxt(dest_dir+"/results/pigs.rden",unpack=True, usecols=[0,1], skip_header=preskip, max_rows=trunc)
+		col_block, col_nm, col_dm, col_TrInv = genfromtxt(dest_dir+"/results/pigs.rden",unpack=True, usecols=[0,1,2,3], skip_header=preskip, max_rows=trunc)
+		print len(col_block)
+	
+		mean_nm      = np.mean(col_nm)
+		mean_dm      = np.mean(col_dm)
+		mean_TrInv   = np.mean(col_TrInv)
+		purity       = 1/mean_TrInv
+		mean_EN      = -log(purity)
+
+		error_nm     = jackknife(mean_nm,col_nm)
+		error_dm     = jackknife(mean_dm,col_dm)
+		error_Tr     = jackknife(mean_TrInv,col_TrInv)
+		error_EN     = 0
+
+		output  = '{:10d}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}'.format(numbbeads, tau, mean_nm, mean_dm, purity, mean_EN, error_nm, error_dm, error_Tr, error_EN)
+		output  += "\n"
+
+	if ENT_TYPE == "REGULARPATH":
+		col_block, col_nm, col_dm, col_Tr = genfromtxt(dest_dir+"/results/pigs.rden",unpack=True, usecols=[0,1,2,3], skip_header=preskip, max_rows=trunc)
 		print len(col_Tr)
 	
+		mean_nm      = np.mean(col_nm)
+		mean_dm      = np.mean(col_dm)
 		mean_Tr      = np.mean(col_Tr)
-		mean_EN      = -log(1/mean_Tr)
+		mean_EN      = -log(mean_Tr)
 
+		error_nm     = jackknife(mean_nm,col_nm)
+		error_dm     = jackknife(mean_dm,col_dm)
 		error_Tr     = jackknife(mean_Tr,col_Tr)
 		error_EN     = error_Tr/mean_Tr
 
-		output  = '{:10d}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}'.format(numbbeads, tau, mean_Tr, mean_EN, error_Tr, error_EN)
+		output  = '{:10d}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}'.format(numbbeads, tau, mean_nm, mean_dm, mean_Tr, mean_EN, error_nm, error_dm, error_Tr, error_EN)
 		output  += "\n"
 
 	return output
@@ -374,13 +382,15 @@ def fmt_entropy(status,variable,ENT_TYPE):
 		if ENT_TYPE == 'BROKENPATH':
 			output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('Beads', variable+'  (1/K)', '<Nm>', '<Dm>', 'Avg. Entropy', 'Error of Nm', 'Error of Dm', 'Error of Entropy')
 		if ENT_TYPE == 'SWAP':
-			output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('Beads', variable+'  (1/K)', '<TrSq>', 'Avg. Entropy', 'Error of TrSq', 'Error of Entropy')
+			output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('Beads', variable+'  (1/K)', '<Nm>', '<Dm>', 'Purity', 'Avg. Entropy', 'Error of Nm', 'Error of Dm', 'Error of Purity', 'Error of Entropy')
+		if ENT_TYPE == 'REGULARPATH':
+			output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('Beads', variable+'  (1/K)', '<Nm>', '<Dm>', 'Purity', 'Avg. Entropy', 'Error of Nm', 'Error of Dm', 'Error of Purity', 'Error of Entropy')
 		output    +="\n"
-		output    += '{:=<155}'.format('#')
+		output    += '{:=<205}'.format('#')
 		output    +="\n"
 		return output
 
-def Submission(status, RUNDIR, dest_path, folder_run, src_path, run_file, dest_dir, Rpt, numbbeads, i, skip, step, temperature,numbblocks,numbpass,molecule_rot,numbmolecules,dipolemoment, status_rhomat, TypeCal, argument2, final_path, dest_pimc, RUNIN,particleA):
+def Submission(status, RUNDIR, dest_path, folder_run, src_path, run_file, dest_dir, Rpt, numbbeads, i, skip, step, temperature,numbblocks,numbpass,molecule_rot,numbmolecules,dipolemoment, status_rhomat, TypeCal, argument2, final_path, dest_pimc, RUNIN, particleA):
 	if RUNDIR != "scratch":
 		os.chdir(dest_path)
 		call(["rm", "-rf", folder_run])

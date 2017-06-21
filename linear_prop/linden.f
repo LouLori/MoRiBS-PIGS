@@ -24,6 +24,7 @@ c.... unit of tau is cm and bconst is cm-1
       tau=taunit/(temprt*nslice)  
       write(6,'(''tau='',f10.5)')tau
 
+c======================================================================c
 c ... judge the maximam l quantum number
       do l=0,maxl
         if(exp(-tau*bconst*l*(l+1)).lt.eps)then
@@ -37,49 +38,16 @@ c ... judge the maximam l quantum number
    20 continue
       write(6,'(''lmax='',i4)')lmax
 
-      cstep=2.0/dfloat(npt-1)
-
-c ... get the norm at cost=1.0
-      cost=-1.0
-c     call exarho(cost,lmax,maxl,pl,rhonom,erot1,tau,bconst,iodevn,
-c    +            nslice)
-c     call ratrho(cost,tau,bconst,rhonm2,erot2,iodevn,nslice)
-
+c======================================================================c
       open(7,file='linden.out',status='unknown')
 
+      cstep=2.0/dfloat(npt-1)
       do ic=1,npt
         cost=(ic-1)*cstep-1.d0
-c     do cost=-1.0,1.0,cstep
-c       call lgnd(lmax,cost,pl)
-c 
-c       rho=0.d0
-c       rhoe=0.d0
-c       rhoo=0.d0
-c       rhosum=0.d0
-c ...   sum over l
-c       do l=0,lmax
-c         tmp=dfloat(2*l+1)*pl(l)
-c         tmp=tmp*exp(-tau*bconst*dfloat(l*(l+1)))
-c         rho=rho+tmp
-c       enddo
-c       rho=rho/(4.0*Pi)
         call exarho(cost,lmax,maxl,pl,rho,erot1,tau,bconst,iodevn,
      +       nslice,erotsq)
         erotf = erot1/rho
-c       call ratrho(cost,tau,bconst,rho2,erot2,iodevn,nslice)
-c        dtau = tau/10000.0d0
-c        taup = tau + dtau
-c        call exarho(cost,lmax,maxl,pl,rhop,erot1,taup,bconst,iodevn,
-c     +       nslice,erotsq)
-c        taum = tau - dtau
-c        call exarho(cost,lmax,maxl,pl,rhom,erot1,taum,bconst,iodevn,
-c     +       nslice,erotsq)
-c        erot2 = 0.5d0*log(rhom/rhop)/dtau
-c        boltz=0.69503476d0
-c        erot2 = erot2/(nslice*boltz)
-c        write(7,'(1p,7(1x,E15.8))')cost,rho,erot2,erotsq
         write(7,'(1p,7(1x,E15.8))')cost,rho,erotf,erotsq
-        
       enddo
       close(7,status='keep')
 
@@ -94,14 +62,11 @@ c ... calculate the rotational energy at beta
       Cv=(erotsq-erot*erot)/temprt**2.d0
       write(6,'(A,E15.8)')'Erot at Beta:',erot
       write(6,'(A,E15.8)')'Cv at Beta:',Cv
-
-
       end
 
-c-----------------------------------------------------------------------
+c======================================================================c
       subroutine exarho(cost,lmax,maxl,pl,rho,erot,tau,bconst,iodevn,
      +                  nslice,erotsq)
-c ... calculate the exact linear rotor propagator
       implicit double precision(a-h,o-z)
       parameter(pi=3.14159265358979323846d+00,boltz=0.69503476d0)
 
@@ -113,7 +78,6 @@ c ... calculate the exact linear rotor propagator
       erot=0.d0
       erotsq=0.d0
 
-c ... sum over l
       do l=0,lmax
         if((mod(l,2).eq.iodevn).or.iodevn.eq.-1) then
           tmp=dfloat(2*l+1)*pl(l)
@@ -131,7 +95,6 @@ c ... convert erotsq to the unit of K^2 and divide by the square of number of sl
       rho=rho/(4.0*Pi)
       erot=erot/(4.0*pi)
       erotsq=erotsq/(4.0*pi)
-
       return
       end
 c-----------------------------------------------------------------------

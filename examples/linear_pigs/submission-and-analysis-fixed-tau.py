@@ -30,20 +30,24 @@ molecule            = "HF"
 #molecule            = "H2"                                                   
 molecule_rot        = "HF"                                                   
 
-numbblocks	        = 1000
+numbblocks	        = 40000
 numbmolecules       = 2
-numbpass            = 50
+numbpass            = 10
 skip                = 2
 
-tau                 = 0.002                                               
+tau                 = 0.001                                               
 
 Rpt                 = 10.05
 dipolemoment        = 1.86
 
-nrange              = 11
+nrange              = 21
 trunc               = numbblocks
-preskip             = 0
+preskip             = 1000
 particleA           = 1
+
+#ENT_TYPE = "SWAP"
+ENT_TYPE = "BROKENPATH"
+#ENT_TYPE = "REGULARPATH"
 
 if (TypeCal == "PIGS"):
 	file1_name      = "Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-tau"+str(tau)+"Kinv-Blocks"+str(numbblocks)
@@ -51,7 +55,7 @@ if (TypeCal == "PIGS"):
 
 if (TypeCal == "ENT"):
 	file1_name      = "Entanglement-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-tau"+str(tau)+"Kinv-Blocks"+str(numbblocks)
-	file1_name     += "-System"+str(numbmolecules)+str(molecule)+"-ParticleA"+str(particleA)+"-e0vsbeads" 
+	file1_name     += "-System"+str(numbmolecules)+str(molecule)+"-ParticleA"+str(particleA)+"-e0vsbeads-"+ENT_TYPE 
 
 
 file2_name          = ""                                                           #change param13
@@ -72,8 +76,6 @@ if status   == "submission":
 		dest_path   = "/scratch/tapas/linear_rotors/" 
 		final_path  = "/work/tapas/linear_rotors/"                                 #change param17
 
-#ENT_TYPE = "SWAP"
-ENT_TYPE = "BROKENPATH"
 if TypeCal == "ENT":
 	intvalue = 3
 else:
@@ -110,7 +112,7 @@ if status == "analysis":
 	if (TypeCal == "ENT"):
 		file_output      = "Entropy-vs-"+str(var)+"-fixed-"
 		file_output     += "tau"+str(tau)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
-		file_output     += "-System"+str(numbmolecules)+str(molecule)+"-ParticleA"+str(particleA)+"-trunc"+str(trunc)+".txt"
+		file_output     += "-System"+str(numbmolecules)+str(molecule)+"-ParticleA"+str(particleA)+"-trunc"+str(trunc)+"-"+ENT_TYPE+".txt"
 		call(["rm", file_output])
 
 	if (TypeCal == "ENT"):
@@ -127,7 +129,7 @@ if status == "analysis":
 if (TypeCal == "ENT"):
 	numbmolecules  *= 2
 
-step = [1.0 for i in range(nrange)]
+step = [0.8 for i in range(nrange)]
 # Loop over jobs
 for i in range(nrange):                                                  #change param19
 

@@ -41,9 +41,7 @@ extern double  Temperature;
 #ifdef GETR
 extern double  Distance;
 #endif
-#ifdef GETDIPOLE
 extern double DipoleMoment;
-#endif
 #ifdef TEST
 extern int     NumbParticle;
 #endif

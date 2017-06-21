@@ -1341,6 +1341,7 @@ double GetRotEnergyPIGS(void)
 }
 #endif
 
+/*
 double *GetCosTheta()
 {
     const char *_proc_=__func__; 
@@ -1424,6 +1425,7 @@ double *GetCosTheta()
     }
     return angle;
 }
+*/
 
 double *GetPhiEntanglement()
 {
@@ -1469,6 +1471,39 @@ double *GetCosThetaEntanglement()
 		}
     }
     return cosTheta;
+}
+
+double *GetProdUvec12()
+{
+    const char *_proc_=__func__; 
+	int type = IMTYPE;
+
+    double *ProdUvec12 = new double [2*NumbRotTimes*NumbAtoms];
+
+	for (int atom = 0; atom < NumbAtoms; atom++)
+   	{
+		for (int it0 = 0; it0 <NumbRotTimes; it0++) 
+		{
+			int it1;
+			if (it0 == (NumbRotTimes - 1)) it1 = 0;
+			else it1 = it0+1;
+
+	   		int offset      = MCAtom[IMTYPE].offset + (NumbRotTimes*atom);
+       		int t0          = offset + it0;
+       		int t1          = offset + it1;
+			
+			double p0 = 0.0;
+			double p1 = 0.0;
+			for (int id = 0; id < NDIM; id++)
+   			{
+				p0 += MCCosine[id][t0]*MCCosine[id][t1];
+			}
+			int kk = it0 + atom*NumbRotTimes;
+       		ProdUvec12[2*kk] = p0;
+       		ProdUvec12[2*kk+1] = SRotDensDeriv(p0,type);
+		}
+    }
+    return ProdUvec12;
 }
 
 #ifdef LINEARROTORS
@@ -1577,6 +1612,7 @@ double GetPotEnergy_Entanglement(int atom0, int atom1)
 #endif
 
 #ifdef ENTANGLEMENT
+/*
 double GetEstimNM1(void)
 {
     int type        = IMTYPE;
@@ -1627,7 +1663,7 @@ double GetEstimNM1(void)
     double estimNM = dens*potEstimNM;
     return estimNM;
 }
-
+*/
 double GetEstimNM(void)
 {
     int atom0, atom1;
@@ -1638,6 +1674,7 @@ double GetEstimNM(void)
    	int particleA2Min = particleA1Max + 1;
    	int particleA2Max = particleA2Min + NumbParticle - 1;
 
+/*
     double spot    = 0.0;
 
     for (int atom0 = particleA1Min; atom0 <= particleA1Max; atom0++)
@@ -1656,10 +1693,11 @@ double GetEstimNM(void)
     	}
 	}
     double potEstimNM = exp(-0.5*MCRotTau*spot);
+*/
 
-    double dens = 1.0;
+    double dens1 = 1.0;
     int it0  = (((NumbRotTimes - 1)/2)-1);
-    int it1   = ((NumbRotTimes - 1)/2);
+    int it1  = ((NumbRotTimes - 1)/2);
 
     for (int atom0 = particleA1Min; atom0 <= particleA1Max; atom0++)
 	{
@@ -1671,14 +1709,14 @@ double GetEstimNM(void)
     	int t1M = offset1 + it1;
 
     	double p0   = 0.0;
-    	double p1   = 0.0;
     	for (int id = 0;id<NDIM;id++)
    	 	{
         	p0 += (MCCosine[id][t1M1]*MCCosine[id][t1M]);
     	}
-    	dens *= SRotDens(p0,type);
+    	dens1 *= SRotDens(p0,type);
 	}
 
+    double dens2 = 1.0;
     for (int atom0 = particleA2Min; atom0 <= particleA2Max; atom0++)
 	{
     	int atom1 = particleA1Max - (atom0 - particleA2Min);
@@ -1690,16 +1728,16 @@ double GetEstimNM(void)
     	int t1M = offset1 + it1;
 
     	double p0   = 0.0;
-    	double p1   = 0.0;
     	for (int id = 0;id<NDIM;id++)
    	 	{
         	p0 += (MCCosine[id][t1M1]*MCCosine[id][t1M]);
     	}
-    	dens *= SRotDens(p0,type);
+    	dens2 *= SRotDens(p0,type);
 	}
-  	double estimNM = dens*potEstimNM;
+  	double estimNM = dens1*dens2;//*potEstimNM;
     return estimNM;
 }
+/*
 double GetEstimDM1(void)
 {
     int type       = IMTYPE;
@@ -1744,6 +1782,7 @@ double GetEstimDM1(void)
     double estimDM = dens*potEstimDM;
     return estimDM;
 }
+*/
 double GetEstimDM(void)
 {
     int type       = IMTYPE;
@@ -1753,6 +1792,7 @@ double GetEstimDM(void)
    	int particleA2Min = particleA1Max + 1;
    	int particleA2Max = particleA2Min + NumbParticle - 1;
 
+/*
     double spot    = 0.0;
 
     for (int atom0 = particleA1Min; atom0 <= particleA1Max; atom0++)
@@ -1771,6 +1811,7 @@ double GetEstimDM(void)
     	}
 	}
     double potEstimDM = exp(-0.5*MCRotTau*spot);
+*/
 
     double dens = 1.0;
     for (int atom0 = particleA1Min; atom0 <= particleA2Max; atom0++)
@@ -1790,7 +1831,7 @@ double GetEstimDM(void)
         }
         dens *= SRotDens(p0,type);
     }
-    double estimDM = dens*potEstimDM;
+    double estimDM = dens;//*potEstimDM;
     return estimDM;
 }
 #endif
@@ -2113,7 +2154,6 @@ double GetRotPlanarEnergy(void)
     for (int atom = 0; atom<MCAtom[type].numb; atom++)                   // multi molecular impurtiy
     {
         offset    = (NumbTimes*atom);
-        int gatom = offset/NumbTimes;    // the same offset for rot and trans degrees
 
         double srot = 0.0;
         double sesq = 0.0;
@@ -2123,11 +2163,15 @@ double GetRotPlanarEnergy(void)
         for (int it0 = 0; it0 < NumbRotTimes; it0++)
 	    {
 	        int t0 = offset +  it0;
-	        int t1 = offset + (it0 + 1) % NumbRotTimes;
+			int it1 = (it0+1);
+			if (it1 == NumbRotTimes) it1 = 0;
+	        int t1 = offset + it1;
 	   
             double p0 = 0.0;
 	        for (int id = 0; id < NDIM; id++)
-	        p0 += (MCCosine[id][t0]*MCCosine[id][t1]);
+			{
+	        	p0 += (MCCosine[id][t0]*MCCosine[id][t1]);
+			}
 
 #ifdef TYPE0
 	        double rdens = SRotDens(p0,type);
@@ -3948,8 +3992,8 @@ double PotFunc(double *uvec1, double *uvec2, double RptAng)
 	double dm_au  = DipoleMoment/AuToDebye; // DipoleMoment in Debye
 	double Rpt_au = RptAng/BOHRRADIUS;
 	double PreFactor = AuToKelvin*dm_au*dm_au/(Rpt_au*Rpt_au*Rpt_au);
-    double pot_au = PreFactor*(uvec1[0]*uvec2[0] + uvec1[1]*uvec2[1] - 2.0*uvec1[2]*uvec2[2]);
-    double PotReturn = pot_au;
+    double PotInKelvin = PreFactor*(uvec1[0]*uvec2[0] + uvec1[1]*uvec2[1] - 2.0*uvec1[2]*uvec2[2]);
+    double PotReturn = PotInKelvin;
 #ifdef POTZERO
 	PotReturn = 0.0;
 #endif
