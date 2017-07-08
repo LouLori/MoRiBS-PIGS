@@ -35,6 +35,11 @@ extern int     NUMB_MOLCS;   // total number of molecules
 
 extern int     NUMB_ATOMTYPES; // total number of atoms types 
 extern int     NUMB_MOLCTYPES; // total number of molecules types
+#ifdef SWAPTOUNSWAP
+extern int     Distribution;
+extern double  MCAccepSwap;
+extern double  MCAccepUnSwap;
+#endif
 
 extern int     NDIM;
 extern double  Temperature;
@@ -42,7 +47,7 @@ extern double  Temperature;
 extern double  Distance;
 #endif
 extern double DipoleMoment;
-#ifdef TEST
+#ifdef BIPARTITION
 extern int     NumbParticle;
 #endif
 extern double  Density;

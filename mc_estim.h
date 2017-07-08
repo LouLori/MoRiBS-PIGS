@@ -29,9 +29,7 @@ double GetKinEnergy(void);
 #ifdef ENTANGLEMENT
 double GetPotEnergy_Entanglement(int atom0, int atom1);
 double GetEstimNM(void);
-double GetEstimNM1(void);
 double GetEstimDM(void);
-double GetEstimDM1(void);
 double *GetCosThetaEntanglement();
 double *GetPhiEntanglement();
 #endif

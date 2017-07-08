@@ -84,7 +84,9 @@ double _trOfDensitySq_total;
 #endif
 
 double _brot;       // rotational kin energy, block average
+double _brot1;       // rotational kin energy, block average
 double _rot_total;  // rotational kin energy, global average
+double _rot_total1;  // rotational kin energy, global average
 double _brotsq;     // rotational energy square, block average
 double _rotsq_total; // rotational energy square, global average
 double _Cv_total;    // heat capacity, global average
@@ -139,11 +141,19 @@ extern "C" void prtper_(int *PIndex,int *NBoson,long int *blockCount);
 #ifdef LINEARROTORS
 extern "C" void vinit_();
 #endif
+#ifdef SWAPTOUNSWAP
+  	int Distribution = 1;
+	double MCAccepSwap;
+	double MCAccepUnSwap;
+#endif
 
 //-------------------------------------------
 
 int main(int argc, char *argv[])
 {
+#ifdef SWAPTOUNSWAP
+srand( time(NULL) );
+#endif
 #ifdef LINEARROTORS
    vinit_();
 #endif
@@ -602,6 +612,8 @@ int main(int argc, char *argv[])
                 	else
                  	{
                     	MCGetAverage();
+						cout<<"TAPAS == "<< passTotal<<endl;
+						cout<<"TAPAS totalCount =  "<< totalCount<<endl;
 					    //omp_set_num_threads(1);
 					    //MCGetAverage();
 					    //omp_set_num_threads(NThreads);
@@ -747,6 +759,10 @@ void PIMCPass(int type,int time)
 
 void MCResetBlockAverage(void) 
 {
+#ifdef SWAPTOUNSWAP
+    MCAccepSwap = 0.0;
+    MCAccepUnSwap = 0.0;
+#endif
 	avergCount = 0.0;
 
 	ResetMCEstims();
@@ -777,6 +793,7 @@ void MCResetBlockAverage(void)
 	_bkin        = 0.0;
 
 	_brot        = 0.0;
+	_brot1        = 0.0;
 	_brotsq      = 0.0;
 	_bCv         = 0.0;
 	_bCv_trans   = 0.0;
@@ -812,6 +829,7 @@ void MCGetAverage(void)
 	_pot_total       += spot;
 #ifdef PIGSROTORS
 	double stotal     = GetTotalEnergy();         // Total energy
+	double srot1      = (GetTotalEnergy() - GetPotEnergyPIGS());
 #else
     double stotal     = 0.0;
 #endif
@@ -856,8 +874,13 @@ void MCGetAverage(void)
     
 #endif
 #else
+#ifdef SWAPTOUNSWAP
+    double snm        = MCAccepSwap/(MCAccepSwap+MCAccepUnSwap);
+    double sdm        = MCAccepUnSwap/(MCAccepSwap+MCAccepUnSwap);
+#else
     double snm        = GetEstimNM();
     double sdm        = GetEstimDM();
+#endif
     _bnm             += snm;
     _bdm             += sdm;
     _nm_total        += snm;
@@ -902,6 +925,13 @@ void MCGetAverage(void)
 		_rotsq_total += ErotSQ;
 
        GetRCF(); 
+
+#ifndef ENTANGLEMENT
+#ifdef PIGSROTORSIO
+		_brot1       += srot1;
+		_rot_total1   += srot1;
+#endif
+#endif
 	}
 
 #ifdef IOWRITE
@@ -1119,9 +1149,12 @@ void SaveEnergy (const char fname [], double acount, long int blocknumb)
 
 #ifndef IOWRITE
 	fid << setw(IO_WIDTH_BLOCK) << blocknumb  << BLANK;                 // block number 1 
+	fid << setw(IO_WIDTH_BLOCK) << acount  << BLANK;                 // block number 1 
+	fid << setw(IO_WIDTH_BLOCK) << avergCount  << BLANK;                 // block number 1 
 	fid << setw(IO_WIDTH) << _bpot*Units.energy/avergCount << BLANK;    // potential anergy 2
 	fid << setw(IO_WIDTH) << _btotal*Units.energy/avergCount << BLANK;  //total energy including rot energy 
 	fid << setw(IO_WIDTH) << _brot*Units.energy/avergCount << BLANK;    // rot energy 5  
+	fid << setw(IO_WIDTH) << _brot1*Units.energy/avergCount << BLANK;    // rot energy 5  
 #else
     fid << setw(IO_WIDTH_BLOCK) << blocknumb  << BLANK;                 // block number 1 
     fid << setw(IO_WIDTH) << _bkin*Units.energy/avergCount << BLANK;    // kinetic energy 2
@@ -1207,6 +1240,7 @@ void SaveSumEnergy (double acount, double numb)  // global average
 	_feng << setw(IO_WIDTH) << _pot_total*Units.energy/acount << BLANK;    
 	_feng << setw(IO_WIDTH) << _total*Units.energy/acount << BLANK;   
 	_feng << setw(IO_WIDTH) << _rot_total*Units.energy/acount << BLANK;   
+	_feng << setw(IO_WIDTH) << _rot_total1*Units.energy/acount << BLANK;   
 #else
 	_feng << setw(IO_WIDTH_BLOCK) << numb <<BLANK;    
 	_feng << setw(IO_WIDTH) << _kin_total*Units.energy/acount << BLANK;    
@@ -1384,6 +1418,7 @@ void InitTotalAverage(void)  // DUMP
 	_dpot_total = 0.0;  //added by Hui Li
 
 	_rot_total = 0.0;
+	_rot_total1 = 0.0;
 	_rotsq_total = 0.0;
 	_Cv_total = 0.0;
 	_Cv_trans_total = 0.0;

@@ -44,7 +44,7 @@ double  Temperature;
 double Distance;
 #endif
 double DipoleMoment;
-#ifdef TEST
+#ifdef BIPARTITION
 int NumbParticle;
 #endif
 

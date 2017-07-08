@@ -65,7 +65,7 @@ const char STATUS_STARTBLOCK[] = "STARTBLOCK";
 const char IO_DISTANCE[]       = "DISTANCE";
 #endif
 const char IO_DIPOLEMOMENT[]   = "DIPOLEMOMENT";
-#ifdef TEST
+#ifdef BIPARTITION
 const char IO_NUMBPARTICLE[]       = "NUMBPARTICLE";
 #endif
 
@@ -350,7 +350,7 @@ void IOReadParams(const char in_file[],int & mc_status)
      } 
      else
 #endif
-#ifdef TEST
+#ifdef BIPARTITION
      if (params==IO_NUMBPARTICLE)
      {
         inf >> NumbParticle;

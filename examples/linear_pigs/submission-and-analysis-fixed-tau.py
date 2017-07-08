@@ -23,30 +23,31 @@ status              = "analysis"
 status_rhomat       = "Yes"                                                      
 #RUNDIR              = "work"
 RUNDIR              = "scratch"
-RUNIN               = "noCPU"
+RUNIN               = "nCPU"
 
 #molecule            = "HF-C60"                                                 
 molecule            = "HF"                                                     
 #molecule            = "H2"                                                   
 molecule_rot        = "HF"                                                   
 
-numbblocks	        = 40000
+numbblocks	        = 400000
 numbmolecules       = 2
 numbpass            = 10
 skip                = 2
 
-tau                 = 0.001                                               
+tau                 = 0.005 
 
 Rpt                 = 10.05
 dipolemoment        = 1.86
 
-nrange              = 21
-trunc               = numbblocks
-preskip             = 1000
+nrange              = 51
+postskip            = 0
+preskip             = 0
 particleA           = 1
 
+ENT_TYPE = "SWAPTOUNSWAP"
 #ENT_TYPE = "SWAP"
-ENT_TYPE = "BROKENPATH"
+#ENT_TYPE = "BROKENPATH"
 #ENT_TYPE = "REGULARPATH"
 
 if (TypeCal == "PIGS"):
@@ -100,19 +101,19 @@ if status == "analysis":
 	if (TypeCal == "PIGS"):
 		file_output      = "Energy-vs-"+str(var)+"-fixed-"
 		file_output     += "tau"+str(tau)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
-		file_output     += "-System"+str(numbmolecules)+str(molecule)+"-trunc"+str(trunc)+".txt"
+		file_output     += "-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+".txt"
 		file_output_angularDOF  = "AngularDOF-vs-"+str(var)+"-fixed-"
 		file_output_angularDOF += "tau"+str(tau)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
-		file_output_angularDOF += "-System"+str(numbmolecules)+str(molecule)+"-trunc"+str(trunc)+".txt"
+		file_output_angularDOF += "-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+".txt"
 		file_output_angularDOF1  = "AngularDOF-vs-"+str(var)+"-fixed-"
 		file_output_angularDOF1 += "tau"+str(tau)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
-		file_output_angularDOF1 += "-System"+str(numbmolecules)+str(molecule)+"-trunc"+str(trunc)+"-for-zdir.txt"
+		file_output_angularDOF1 += "-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+"-for-zdir.txt"
 		call(["rm", file_output, file_output_angularDOF,file_output_angularDOF1])
 
 	if (TypeCal == "ENT"):
 		file_output      = "Entropy-vs-"+str(var)+"-fixed-"
 		file_output     += "tau"+str(tau)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
-		file_output     += "-System"+str(numbmolecules)+str(molecule)+"-ParticleA"+str(particleA)+"-trunc"+str(trunc)+"-"+ENT_TYPE+".txt"
+		file_output     += "-System"+str(numbmolecules)+str(molecule)+"-ParticleA"+str(particleA)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+"-"+ENT_TYPE+".txt"
 		call(["rm", file_output])
 
 	if (TypeCal == "ENT"):
@@ -129,7 +130,7 @@ if status == "analysis":
 if (TypeCal == "ENT"):
 	numbmolecules  *= 2
 
-step = [0.8 for i in range(nrange)]
+step = [1.8 for i in range(nrange)]
 # Loop over jobs
 for i in range(nrange):                                                  #change param19
 
@@ -157,12 +158,12 @@ for i in range(nrange):                                                  #change
 			variable          = beta
 			try:
 				if (TypeCal == "ENT"):
-					fanalyze.write(support.outputstr_entropy(numbbeads,variable,dest_dir,trunc,preskip,ENT_TYPE))
+					fanalyze.write(support.outputstr_entropy(numbbeads,variable,dest_dir,preskip,postskip,ENT_TYPE))
 				else:
-					fanalyze.write(support.outputstr_energy(numbbeads,variable,dest_dir,trunc,preskip))
+					fanalyze.write(support.outputstr_energy(numbbeads,variable,dest_dir,preskip,postskip))
 					print dest_dir
-					fanalyze_angularDOF.write(support.outputstr_angle(numbbeads,variable,dest_dir,trunc,preskip))
-					fanalyze_angularDOF1.write(support.outputstr_angle1(numbbeads,variable,dest_dir,trunc,preskip))
+					fanalyze_angularDOF.write(support.outputstr_angle(numbbeads,variable,dest_dir,preskip,postskip))
+					fanalyze_angularDOF1.write(support.outputstr_angle1(numbbeads,variable,dest_dir,preskip,postskip))
 			except:
 				pass
 
