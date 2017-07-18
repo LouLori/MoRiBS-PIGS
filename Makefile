@@ -4,11 +4,11 @@
 options= -Ofast -fopenmp
 
 # CFLAGS for PIGS 
-CFLAGS =-I./sprng/include -I/usr/local/include -DUNITS -DPIGSROTORS -DPIGSROTORSIO -DLINEARROTORS -DLINEARROTORSIO -DTYPE1 -DGETR -DCHAINCONFIG
-#-DDIPOLE
+#CFLAGS =-I./sprng/include -I/usr/local/include -DUNITS -DPIGSROTORS -DPIGSROTORSIO -DLINEARROTORS -DLINEARROTORSIO -DTYPE1 -DGETR -DCHAINCONFIG -DDDCORR 
+#-DIOFILES #-DINSTANT -DBINARY #-DCAGEPOT
 
 # CFLAGS for ENTANGLEMENT
-#CFLAGS =-I./sprng/include -I/usr/local/include -DUNITS -DPIGSROTORS -DPIGSROTORSIO -DLINEARROTORS -DLINEARROTORSIO -DENTANGLEMENT -DCHAINCONFIG -DBIPARTITION  -DGETR -DMODIFYSROTDENS -DSWAPTOUNSWAP 
+CFLAGS =-I./sprng/include -I/usr/local/include -DUNITS -DPIGSROTORS -DPIGSROTORSIO -DLINEARROTORS -DLINEARROTORSIO -DENTANGLEMENT -DCHAINCONFIG -DBIPARTITION -DGETR -DMODIFYSROTDENS -DSWAPTOUNSWAP 
 
 # CFLAGS for Finite Temperature Calculations 
 #CFLAGS =-I./sprng/include -I/usr/local/include -DUNITS -DLINEARROTORS -DLINEARROTORSIO -DGETR -DTYPE1 -DCHAINCONFIG -DINSTANT -DPIMCINSTANT -DIOFILES 
@@ -17,7 +17,8 @@ CFLAGS =-I./sprng/include -I/usr/local/include -DUNITS -DPIGSROTORS -DPIGSROTORS
 #Below is the LDFLAGS Toby Zeng use on nlogn
 #LDFLAGS=-L/home/pnroy/Dev/lib64/ -lm -L./sprng/lib -llcg -L/home/pnroy/Dev/lib64/ -lgfortran  -L/opt/intel/mkl/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
 #below is the LDFLAGS with minimum flags
-LDFLAGS= -lm -L./sprng/lib -llcg -lgfortran -lblas -llapack
+#LDFLAGS= -lm -L./sprng/lib -llcg -lgfortran -lblas -llapack
+LDFLAGS= -lm -L./sprng/lib -llcg -lgfortran 
  
 #-------------------------------------------------------------------------
 #  Compilers
@@ -33,7 +34,7 @@ FC=gfortran
 #-------------------------------------------------------------------------
 # objects for QMC
  
-pimcOBJS=mc_piqmc.o mc_estim.o mc_qworm.o mc_input.o mc_setup.o mc_poten.o mc_randg.o mc_utils.o rotden.o rotpro_sub.o rotred.o potred.o vcord.o vcalc.o initconf.o vspher.o caleng_tip4p_gg.o omprng.o rngstream.o vh2h2.o h2oc60.o plgndr.o
+pimcOBJS=mc_piqmc.o mc_estim.o mc_qworm.o mc_input.o mc_setup.o mc_poten.o mc_randg.o mc_utils.o rotden.o rotpro_sub.o rotred.o potred.o vcord.o vcalc.o initconf.o vspher.o caleng_tip4p_gg.o omprng.o rngstream.o vh2h2.o h2oc60.o plgndr.o hfc60.o
  
 #----------------------------------------- PIMC --------------------------
 

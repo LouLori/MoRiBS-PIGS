@@ -12,6 +12,9 @@ aa.f
 *2.cc
 test-hfhf.f
 #ignore
+.DS_Store
+._.DS_Store
+._PES_HFC60.f
 /linear_prop/linden.x
 /linear_prop/qpr.x
 /linear_prop/linden.out

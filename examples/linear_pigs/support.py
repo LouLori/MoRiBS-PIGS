@@ -49,6 +49,7 @@ def bconstant(molecule_rot):
 	bconst         = 0.5*(energyj1-energyj0)     # in cm^-1
 	if (molecule_rot == "HF"):
 		bconst	   = 20.9561                     # in cm^-1  and it is  taken from http://webbook.nist.gov/cgi/inchi?ID=C7664393&Mask=1000#Diatomic
+		#bconst	   = 20.561                      # in cm^-1  and it is  taken from J. Opt. Soc. Am. Vol. 57, issue 12, page 1464, year 1967
 	return bconst
 
 def replace(string_old, string_new, file1, file2):
@@ -104,80 +105,68 @@ def inputstr(numbbeads,tau,temperature):
 	output ="numbbeads = "+argu1+", tau = "+argu2+", temperature = "+argu3+"\n"
 	return output
 
-def outputstr_energy(numbbeads,tau,dest_dir,preskip,postskip):
+def GetAverageEnergy(numbbeads,tau,dest_dir,preskip,postskip):
 	'''
 	This function gives us the output 
 	'''
 	col_block, col_pot, col_tot, col_rot, col_rot1 = genfromtxt(dest_dir+"/results/pigs.eng",unpack=True, usecols=[0,1,2,3,4], skip_header=preskip, skip_footer=postskip)
-	print len(col_tot)
+	print(len(col_tot))
 	
 	mean_pot      = np.mean(col_pot)
 	mean_tot      = np.mean(col_tot)
 	mean_rot      = np.mean(col_rot)
 	mean_rot1     = np.mean(col_rot1)
 
-	#error_pot     = jackknife(mean_pot,col_pot)
-	#error_tot     = jackknife(mean_tot,col_tot)
-	#error_rot     = jackknife(mean_rot,col_rot)
-	#error_rot1    = jackknife(mean_rot1,col_rot1)
 	error_pot     = np.std(col_pot,ddof=1)/sqrt(len(col_pot))
 	error_tot     = np.std(col_tot,ddof=1)/sqrt(len(col_tot))
 	error_rot     = np.std(col_rot,ddof=1)/sqrt(len(col_rot))
 	error_rot1    = np.std(col_rot1,ddof=1)/sqrt(len(col_rot1))
 
-	output  = '{:10d}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}'.format(numbbeads, tau, mean_pot, mean_tot, mean_rot, mean_rot1, error_pot, error_tot, error_rot, error_rot1)
+	output  = '{0:10d}{1:20.5f}{2:20.5f}{3:20.5f}{4:20.5f}{5:20.5f}{6:20.5f}{7:20.5f}{8:20.5f}{9:20.5f}'.format(numbbeads, tau, mean_pot, mean_tot, mean_rot, mean_rot1, error_pot, error_tot, error_rot, error_rot1)
 	output  += "\n"
 	return output
 
-def outputstr_angle(numbbeads,tau,dest_dir,preskip,postskip):
+def GetAverageOrientation(numbbeads,tau,dest_dir,preskip,postskip):
 	'''
 	This function gives us the output 
 	'''
-	col_block, col_costheta, col_theta, col_costheta1, col_theta1 = genfromtxt(dest_dir+"/results/pigs.dof",unpack=True, usecols=[0,1,2,3,4], skip_header=preskip, skip_footer=postskip)
+	col_block, col_costheta, col_compx, col_compy, col_compz = genfromtxt(dest_dir+"/results/pigs.dof",unpack=True, usecols=[0,1,2,3,4], skip_header=preskip, skip_footer=postskip)
+	'''
+	fd             = open(dest_dir+'/results/pigs_instant.dof', 'rb')
+	shape          = (-1,5) 
+	dataBin        = np.fromfile(file=fd, count = -1, dtype=np.float64).reshape(shape)
+	col_block      = dataBin[:,0]
+	col_costheta   = dataBin[:,1]
+	col_compx      = dataBin[:,2]
+	col_compy      = dataBin[:,3]
+	col_compz      = dataBin[:,4]
+	'''
 
 	mean_costheta  = np.mean(col_costheta)
-	mean_theta     = np.mean(col_theta)
-	mean_costheta1 = np.mean(col_costheta1)
-	mean_theta1    = np.mean(col_theta1)
+	mean_compx     = np.mean(col_compx)
+	mean_compy     = np.mean(col_compy)
+	mean_compz     = np.mean(col_compz)
 
-	#error_costheta = jackknife(mean_costheta,col_costheta)
-	#error_theta    = jackknife(mean_theta,col_theta)
-	#error_costheta1= jackknife(mean_costheta1,col_costheta1)
-	#error_theta1   = jackknife(mean_theta1,col_theta1)
 	error_costheta = np.std(col_costheta,ddof=1)/sqrt(len(col_costheta))
-	error_theta    = np.std(col_theta,ddof=1)/sqrt(len(col_theta))
-	error_costheta1= np.std(col_costheta1,ddof=1)/sqrt(len(col_costheta1))
-	error_theta1   = np.std(col_theta1,ddof=1)/sqrt(len(col_theta1)) 
+	error_compx    = np.std(col_compx,ddof=1)/sqrt(len(col_compx))
+	error_compy    = np.std(col_compy,ddof=1)/sqrt(len(col_compy))
+	error_compz    = np.std(col_compz,ddof=1)/sqrt(len(col_compz))
 
-	output  = '{:10d}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}'.format(numbbeads, tau, mean_costheta, mean_theta, error_costheta, error_theta, mean_costheta1, mean_theta1, error_costheta1, error_theta1)
+	col_abscompx   = np.fabs(col_compx)
+	col_abscompy   = np.fabs(col_compy)
+	col_abscompz   = np.fabs(col_compz)
+	mean_abscompx  = np.mean(col_abscompx)
+	mean_abscompy  = np.mean(col_abscompy)
+	mean_abscompz  = np.mean(col_abscompz)
+	error_abscompx = np.std(col_abscompx,ddof=1)/sqrt(len(col_abscompx))
+	error_abscompy = np.std(col_abscompy,ddof=1)/sqrt(len(col_abscompy))
+	error_abscompz = np.std(col_abscompz,ddof=1)/sqrt(len(col_abscompz))
+
+	output  = '{0:10d}{1:15.5f}{2:15.5f}{3:15.5f}{4:15.5f}{5:15.5f}{6:15.5f}{7:15.5f}{8:15.5f}{9:15.5f}{10:15.5f}{11:15.5f}{12:15.5f}{13:15.5f}{14:15.5f}{15:15.5f}'.format(numbbeads, tau, mean_costheta, mean_compx, mean_compy, mean_compz, mean_abscompx, mean_abscompy, mean_abscompz, error_costheta, error_compx, error_compy, error_compz, error_abscompx, error_abscompy, error_abscompz)
 	output  += "\n"
 	return output
 
-def outputstr_angle1(numbbeads,tau,dest_dir,preskip,postskip):
-	'''
-	This function gives us the output 
-	'''
-	col_block, col_costheta, col_theta, col_costheta1, col_theta1 = genfromtxt(dest_dir+"/results/pigs.dof",unpack=True, usecols=[0,5,6,7,8], skip_header=preskip, skip_footer=postskip)
-
-	mean_costheta  = np.mean(col_costheta)
-	mean_theta     = np.mean(col_theta)
-	mean_costheta1 = np.mean(col_costheta1)
-	mean_theta1    = np.mean(col_theta1)
-
-	#error_costheta = jackknife(mean_costheta,col_costheta)
-	#error_theta    = jackknife(mean_theta,col_theta)
-	#error_costheta1= jackknife(mean_costheta1,col_costheta1)
-	#error_theta1   = jackknife(mean_theta1,col_theta1)
-	error_costheta = np.std(col_costheta,ddof=1)/sqrt(len(col_costheta))
-	error_theta    = np.std(col_theta,ddof=1)/sqrt(len(col_theta))
-	error_costheta1= np.std(col_costheta1,ddof=1)/sqrt(len(col_costheta1))
-	error_theta1   = np.std(col_theta1,ddof=1)/sqrt(len(col_theta1)) 
-
-	output  = '{:10d}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}'.format(numbbeads, tau, mean_costheta, mean_theta, error_costheta, error_theta, mean_costheta1, mean_theta1, error_costheta1, error_theta1)
-	output  += "\n"
-	return output
-
-def fmt_energy(status,variable):
+def fmtAverageEnergy(status,variable):
 	'''
 	This function gives us the output 
 	'''
@@ -188,16 +177,16 @@ def fmt_energy(status,variable):
 
 	if status == "analysis":
 		output     ="#"
-		output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('Beads', variable, 'Avg. Potential', 'Avg. Total', 'Avg. rotational', 'Avg. (E - V)', 'Error of Potential', 'Error of Total', 'Error of Rotational', 'Error of (E - V)')
+		output    += '{0:^15}{1:^20}{2:^20}{3:^20}{4:^20}{5:^20}{6:^20}{7:^20}{8:^20}{9:^20}'.format('Beads', variable, 'Avg. Potential', 'Avg. Total', 'Avg. rotational', 'Avg. (E - V)', 'Error of Potential', 'Error of Total', 'Error of Rotational', 'Error of (E - V)')
 		output    +="\n"
 		output    +="#"
-		output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('', (str(unit)), 'Energy (K)', 'Energy (K)', 'Energy (K)', 'Energy (K)', 'Energy (K)', 'Energy (K)', 'Energy (K)', 'Energy (K)')
+		output    += '{0:^15}{1:^20}{2:^20}{3:^20}{4:^20}{5:^20}{6:^20}{7:^20}{8:^20}{9:^20}'.format('', (str(unit)), 'Energy (K)', 'Energy (K)', 'Energy (K)', 'Energy (K)', 'Energy (K)', 'Energy (K)', 'Energy (K)', 'Energy (K)')
 		output    +="\n"
-		output    += '{:=<200}'.format('#')
+		output    += '{0:=<200}'.format('#')
 		output    +="\n"
 		return output
 
-def fmt_angle(status,variable):
+def fmtAverageOrientation(status,variable):
 	'''
 	This function gives us the output 
 	'''
@@ -208,17 +197,93 @@ def fmt_angle(status,variable):
 
 	if status == "analysis":
 		output     ="#"
-		output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('Beads', variable, 'Avg. CosTheta', 'Avg. Theta', 'Error of CosTheta', 'Error of Theta', 'Avg. CosTheta1', 'Avg. Theta1', 'Error of CosTheta1', 'Error of Theta1')
+		output    += '{0:^15}{1:^15}{2:^15}{3:^15}{4:^15}{5:^15}{6:^15}{7:^15}{8:^15}{9:^15}{10:^15}{11:^15}{12:^15}{13:^15}{14:^15}{15:^15}'.format('Beads', variable, '<sum of ei.ej>', '< compx >', '< compy >', '< compz >', '< abscompx >', '< abscompy >', '< abscompz >', 'Error: ei.ej', 'Error: compx', 'Error: compy', 'Error: compz', 'Error: abscompx', 'Error: abscompy', 'Error: abscompz')
 		output    +="\n"
 		output    +="#"
-		output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('', (str(unit)), '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)')
+		output    += '{0:^15}{1:^15}{2:^15}{3:^15}{4:^15}{5:^15}{6:^15}{7:^15}{8:^15}{9:^15}{10:^15}{11:^15}{12:^15}{13:^15}{14:^15}{15:^15}'.format('', (str(unit)), '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)')
 		output    +="\n"
-		output    += '{:=<195}'.format('#')
+		output    +="#"
+		output    += '{0:^15}{1:^15}{2:^15}{3:^15}{4:^15}{5:^15}{6:^15}{7:^15}{8:^15}{9:^15}{10:^15}{11:^15}{12:^15}{13:^15}{14:^15}{15:^15}'.format('(1)', '(2)', '(3)', '(4)', '(5)', '(6)', '(7)', '(8)', '(9)', '(10)', '(11)', '(12)', '(13)', '(14)', '(15)', '(16)')
+		output    +="\n"
+		output    += '{0:=<250}'.format('#')
 		output    +="\n"
 
 	return output
 
-def fmt_angle1(status,variable):
+def GetAverageEntropy(numbbeads,tau,dest_dir,preskip,postskip,ENT_TYPE):
+	'''
+	This function gives us the output 
+	'''
+	if ENT_TYPE == "SWAPTOUNSWAP":
+		col_block, col_nm, col_dm = genfromtxt(dest_dir+"/results/pigs.rden",unpack=True, usecols=[0,1,2], skip_header=preskip, skip_footer=postskip)
+		print(len(col_block))
+	
+		mean_nm      = np.mean(col_nm)
+		mean_dm      = np.mean(col_dm)
+		purity       = mean_nm/mean_dm
+		mean_EN      = -log(purity)
+
+		error_nm     = np.std(col_nm,ddof=1)/sqrt(len(col_block)) 
+		error_dm     = np.std(col_dm,ddof=1)/sqrt(len(col_block))
+		error_Tr     = abs(purity)*sqrt((error_dm/mean_dm)*(error_dm/mean_dm) + (error_nm/mean_nm)*(error_nm/mean_nm))
+		error_EN     = sqrt((error_dm/mean_dm)*(error_dm/mean_dm) + (error_nm/mean_nm)*(error_nm/mean_nm))
+
+		output  = '{0:10d}{1:20.5f}{2:20.5f}{3:20.5f}{4:20.5f}{5:20.5f}{6:20.5f}{7:20.5f}{8:20.5f}{9:20.5f}'.format(numbbeads, tau, mean_nm, mean_dm, purity, mean_EN, error_nm, error_dm, error_Tr, error_EN)
+		output  += "\n"
+
+	if ENT_TYPE == 'BROKENPATH':
+		col_block, col_nm, col_dm = genfromtxt(dest_dir+"/results/pigs.rden",unpack=True, usecols=[0,1,2], skip_header=preskip, skip_footer=postskip)
+		print(len(col_nm))
+	
+		mean_nm      = np.mean(col_nm)
+		mean_dm      = np.mean(col_dm)
+		mean_EN      = -log(mean_nm/mean_dm)
+
+		error_nm     = jackknife(mean_nm,col_nm)
+		error_dm     = jackknife(mean_dm,col_dm)
+		error_EN     = sqrt((error_dm/mean_dm)*(error_dm/mean_dm) + (error_nm/mean_nm)*(error_nm/mean_nm))
+
+		output  = '{0:10d}{1:20.5f}{2:20.5f}{3:20.5f}{4:20.5f}{5:20.5f}{6:20.5f}{7:20.5f}'.format(numbbeads, tau, mean_nm, mean_dm, mean_EN, error_nm, error_dm, error_EN)
+		output  += "\n"
+
+	if ENT_TYPE == "SWAP":
+		col_block, col_nm, col_dm, col_TrInv = genfromtxt(dest_dir+"/results/pigs.rden",unpack=True, usecols=[0,1,2,3], skip_header=preskip, skip_footer=postskip)
+		print(len(col_block))
+	
+		mean_nm      = np.mean(col_nm)
+		mean_dm      = np.mean(col_dm)
+		mean_TrInv   = np.mean(col_TrInv)
+		purity       = 1/mean_TrInv
+		mean_EN      = -log(purity)
+
+		error_nm     = jackknife(mean_nm,col_nm)
+		error_dm     = jackknife(mean_dm,col_dm)
+		error_Tr     = jackknife(mean_TrInv,col_TrInv)
+		error_EN     = 0 #Write the proper equation
+
+		output  = '{0:10d}{1:20.5f}{2:20.5f}{3:20.5f}{4:20.5f}{5:20.5f}{6:20.5f}{7:20.5f}{8:20.5f}{9:20.5f}'.format(numbbeads, tau, mean_nm, mean_dm, purity, mean_EN, error_nm, error_dm, error_Tr, error_EN)
+		output  += "\n"
+
+	if ENT_TYPE == "REGULARPATH":
+		col_block, col_nm, col_dm, col_Tr = genfromtxt(dest_dir+"/results/pigs.rden",unpack=True, usecols=[0,1,2,3], skip_header=preskip, skip_footer=postskip)
+		print(len(col_Tr))
+	
+		mean_nm      = np.mean(col_nm)
+		mean_dm      = np.mean(col_dm)
+		mean_Tr      = np.mean(col_Tr)
+		mean_EN      = -log(mean_Tr)
+
+		error_nm     = jackknife(mean_nm,col_nm)
+		error_dm     = jackknife(mean_dm,col_dm)
+		error_Tr     = jackknife(mean_Tr,col_Tr)
+		error_EN     = error_Tr/mean_Tr
+
+		output  = '{0:10d}{1:20.5f}{2:20.5f}{3:20.5f}{4:20.5f}{5:20.5f}{6:20.5f}{7:20.5f}{8:20.5f}{9:20.5f}'.format(numbbeads, tau, mean_nm, mean_dm, mean_Tr, mean_EN, error_nm, error_dm, error_Tr, error_EN)
+		output  += "\n"
+
+	return output
+
+def fmtAverageEntropy(status,variable,ENT_TYPE):
 	'''
 	This function gives us the output 
 	'''
@@ -229,17 +294,18 @@ def fmt_angle1(status,variable):
 
 	if status == "analysis":
 		output     ="#"
-		output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('Beads', variable, 'Avg. CosTheta', 'Avg. Theta', 'Error of CosTheta', 'Error of Theta', 'Avg. CosTheta1', 'Avg. Theta1', 'Error of CosTheta1', 'Error of Theta1')
+		if ENT_TYPE == 'SWAPTOUNSWAP':
+			output    += '{0:^15}{1:^20}{2:^20}{3:^20}{4:^20}{5:^20}{6:^20}{7:^20}{8:^20}{9:^20}'.format('Beads', variable+'  (1/K)', '<Nm>', '<Dm>', 'Purity', 'Avg. Entropy', 'Error of Nm', 'Error of Dm', 'Error of Purity', 'Error of Entropy')
+		if ENT_TYPE == 'BROKENPATH':
+			output    += '{0:^15}{1:^20}{2:^20}{3:^20}{4:^20}{5:^20}{6:^20}{7:^20}'.format('Beads', variable+'  (1/K)', '<Nm>', '<Dm>', 'Avg. Entropy', 'Error of Nm', 'Error of Dm', 'Error of Entropy')
+		if ENT_TYPE == 'SWAP':
+			output    += '{0:^15}{1:^20}{2:^20}{3:^20}{4:^20}{5:^20}{6:^20}{7:^20}{8:^20}{9:^20}'.format('Beads', variable+'  (1/K)', '<Nm>', '<Dm>', 'Purity', 'Avg. Entropy', 'Error of Nm', 'Error of Dm', 'Error of Purity', 'Error of Entropy')
+		if ENT_TYPE == 'REGULARPATH':
+			output    += '{0:^15}{1:^20}{2:^20}{3:^20}{4:^20}{5:^20}{6:^20}{7:^20}{8:^20}{9:^20}'.format('Beads', variable+'  (1/K)', '<Nm>', '<Dm>', 'Purity', 'Avg. Entropy', 'Error of Nm', 'Error of Dm', 'Error of Purity', 'Error of Entropy')
 		output    +="\n"
-		output    +="#"
-		output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('', (str(unit)), '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)', '(Radian)')
+		output    += '{0:=<205}'.format('#')
 		output    +="\n"
-		output    += '{:=<195}'.format('#')
-		output    +="\n"
-
-	return output
-
-
+		return output
 
 def modify_input(temperature,numbbeads,numbblocks,numbpass,molecule_rot,numbmolecules,distance,level,step,dipolemoment,particleA):
 	'''
@@ -255,7 +321,8 @@ def modify_input(temperature,numbbeads,numbblocks,numbpass,molecule_rot,numbmole
 	replace("dstep_input", str(step), "qmc8.input", "qmc9.input")
 	replace("dipolemoment_input", str(dipolemoment), "qmc9.input", "qmc10.input")
 	replace("numbpass_input", str(numbpass), "qmc10.input", "qmc11.input")
-	mcskip = numbbeads*numbpass
+	#mcskip = numbbeads*numbpass
+	mcskip = numbpass
 	replace("mskip_input", str(mcskip), "qmc11.input", "qmc12.input")
 	replace("numbparticle_input", str(particleA), "qmc12.input", "qmc.input")
 	call(["rm", "qmc2.input"])
@@ -282,7 +349,7 @@ def rotmat(TypeCal,molecule,temperature,numbbeads):
 	else:
 		numbbeads1		= numbbeads - 1
 	command_linden_run = "/home/tapas/Moribs-pigs/MoRiBS-PIMC/linear_prop/linden.x "+str(temperature)+" "+str(numbbeads1)+" "+str(bconstant(molecule))+" 15000 -1"
-	print command_linden_run
+	print(command_linden_run)
 	system(command_linden_run)
 	file_rotdens    = molecule+"_T"+str(temperature1)+"t"+str(numbbeads)+".rot"
 	call(["mv", "linden.out", file_rotdens])
@@ -327,104 +394,7 @@ mv %s /work/tapas/linear_rotors
 """ % (job_name, walltime, processors, logpath, job_name, logpath, job_name, omp_thread, run_dir, output_dir, input_file, run_dir, file_rotdens, run_dir, run_dir, qmcinp, exe_file, run_dir, run_dir)
 	return job_string
 
-def outputstr_entropy(numbbeads,tau,dest_dir,preskip,postskip,ENT_TYPE):
-	'''
-	This function gives us the output 
-	'''
-	if ENT_TYPE == "SWAPTOUNSWAP":
-		col_block, col_nm, col_dm = genfromtxt(dest_dir+"/results/pigs.rden",unpack=True, usecols=[0,1,2], skip_header=preskip, skip_footer=postskip)
-		print len(col_block)
-	
-		mean_nm      = np.mean(col_nm)
-		mean_dm      = np.mean(col_dm)
-		purity       = mean_nm/mean_dm
-		mean_EN      = -log(purity)
-
-		error_nm     = np.std(col_nm,ddof=1)/sqrt(len(col_block)) 
-		error_dm     = np.std(col_dm,ddof=1)/sqrt(len(col_block))
-		error_Tr     = abs(purity)*sqrt((error_dm/mean_dm)*(error_dm/mean_dm) + (error_nm/mean_nm)*(error_nm/mean_nm))
-		error_EN     = sqrt((error_dm/mean_dm)*(error_dm/mean_dm) + (error_nm/mean_nm)*(error_nm/mean_nm))
-
-		output  = '{:10d}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}'.format(numbbeads, tau, mean_nm, mean_dm, purity, mean_EN, error_nm, error_dm, error_Tr, error_EN)
-		output  += "\n"
-
-	if ENT_TYPE == 'BROKENPATH':
-		col_block, col_nm, col_dm = genfromtxt(dest_dir+"/results/pigs.rden",unpack=True, usecols=[0,1,2], skip_header=preskip, skip_footer=postskip)
-		print len(col_nm)
-	
-		mean_nm      = np.mean(col_nm)
-		mean_dm      = np.mean(col_dm)
-		mean_EN      = -log(mean_nm/mean_dm)
-
-		error_nm     = jackknife(mean_nm,col_nm)
-		error_dm     = jackknife(mean_dm,col_dm)
-		error_EN     = sqrt((error_dm/mean_dm)*(error_dm/mean_dm) + (error_nm/mean_nm)*(error_nm/mean_nm))
-
-		output  = '{:10d}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}'.format(numbbeads, tau, mean_nm, mean_dm, mean_EN, error_nm, error_dm, error_EN)
-		output  += "\n"
-
-	if ENT_TYPE == "SWAP":
-		col_block, col_nm, col_dm, col_TrInv = genfromtxt(dest_dir+"/results/pigs.rden",unpack=True, usecols=[0,1,2,3], skip_header=preskip, skip_footer=postskip)
-		print len(col_block)
-	
-		mean_nm      = np.mean(col_nm)
-		mean_dm      = np.mean(col_dm)
-		mean_TrInv   = np.mean(col_TrInv)
-		purity       = 1/mean_TrInv
-		mean_EN      = -log(purity)
-
-		error_nm     = jackknife(mean_nm,col_nm)
-		error_dm     = jackknife(mean_dm,col_dm)
-		error_Tr     = jackknife(mean_TrInv,col_TrInv)
-		error_EN     = 0 #Write the proper equation
-
-		output  = '{:10d}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}'.format(numbbeads, tau, mean_nm, mean_dm, purity, mean_EN, error_nm, error_dm, error_Tr, error_EN)
-		output  += "\n"
-
-	if ENT_TYPE == "REGULARPATH":
-		col_block, col_nm, col_dm, col_Tr = genfromtxt(dest_dir+"/results/pigs.rden",unpack=True, usecols=[0,1,2,3], skip_header=preskip, skip_footer=postskip)
-		print len(col_Tr)
-	
-		mean_nm      = np.mean(col_nm)
-		mean_dm      = np.mean(col_dm)
-		mean_Tr      = np.mean(col_Tr)
-		mean_EN      = -log(mean_Tr)
-
-		error_nm     = jackknife(mean_nm,col_nm)
-		error_dm     = jackknife(mean_dm,col_dm)
-		error_Tr     = jackknife(mean_Tr,col_Tr)
-		error_EN     = error_Tr/mean_Tr
-
-		output  = '{:10d}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}{:20.5f}'.format(numbbeads, tau, mean_nm, mean_dm, mean_Tr, mean_EN, error_nm, error_dm, error_Tr, error_EN)
-		output  += "\n"
-
-	return output
-
-def fmt_entropy(status,variable,ENT_TYPE):
-	'''
-	This function gives us the output 
-	'''
-	if variable == "Rpt":
-		unit = "(Angstrom)"
-	else:
-		unit = "(1/K)"
-
-	if status == "analysis":
-		output     ="#"
-		if ENT_TYPE == 'SWAPTOUNSWAP':
-			output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('Beads', variable+'  (1/K)', '<Nm>', '<Dm>', 'Purity', 'Avg. Entropy', 'Error of Nm', 'Error of Dm', 'Error of Purity', 'Error of Entropy')
-		if ENT_TYPE == 'BROKENPATH':
-			output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('Beads', variable+'  (1/K)', '<Nm>', '<Dm>', 'Avg. Entropy', 'Error of Nm', 'Error of Dm', 'Error of Entropy')
-		if ENT_TYPE == 'SWAP':
-			output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('Beads', variable+'  (1/K)', '<Nm>', '<Dm>', 'Purity', 'Avg. Entropy', 'Error of Nm', 'Error of Dm', 'Error of Purity', 'Error of Entropy')
-		if ENT_TYPE == 'REGULARPATH':
-			output    += '{:^15}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}{:^20}'.format('Beads', variable+'  (1/K)', '<Nm>', '<Dm>', 'Purity', 'Avg. Entropy', 'Error of Nm', 'Error of Dm', 'Error of Purity', 'Error of Entropy')
-		output    +="\n"
-		output    += '{:=<205}'.format('#')
-		output    +="\n"
-		return output
-
-def Submission(status, RUNDIR, dest_path, folder_run, src_path, run_file, dest_dir, Rpt, numbbeads, i, skip, step, temperature,numbblocks,numbpass,molecule_rot,numbmolecules,dipolemoment, status_rhomat, TypeCal, argument2, final_path, dest_pimc, RUNIN, particleA):
+def Submission(status, RUNDIR, dest_path, folder_run, src_path, run_file, dest_dir, Rpt, numbbeads, i, skip, step, temperature,numbblocks,numbpass,molecule_rot,numbmolecules,dipolemoment, status_rhomat, TypeCal, argument2, final_path, dest_pimc, RUNIN, particleA, NameOfServer, NameOfPartition):
 	if RUNDIR != "scratch":
 		os.chdir(dest_path)
 		call(["rm", "-rf", folder_run])
@@ -443,7 +413,7 @@ def Submission(status, RUNDIR, dest_path, folder_run, src_path, run_file, dest_d
 
 	argument1     = Rpt
 	level         = levels(numbbeads)
-	istep         = i/skip
+	istep         = int(i/skip)
 	step1         = step[istep]
 	modify_input(temperature,numbbeads,numbblocks,numbpass,molecule_rot,numbmolecules,argument1,level,step1,dipolemoment,particleA)
 	if status_rhomat == "Yes":
@@ -474,7 +444,7 @@ def Submission(status, RUNDIR, dest_path, folder_run, src_path, run_file, dest_d
 		if RUNIN == "CPU":
 			fwrite.write(jobstring_scratch_cpu(argument2,i,numbmolecules, dest_dir, molecule_rot, temperature, numbbeads, final_dir, dest_pimc, src_path))
 		else:
-			fwrite.write(jobstring_scratch(argument2,i,numbmolecules, dest_dir, molecule_rot, temperature, numbbeads, final_dir, dest_pimc))
+			fwrite.write(jobstring_scratch_sbatch(argument2,i,numbmolecules, dest_dir, molecule_rot, temperature, numbbeads, final_dir, dest_pimc, NameOfServer))
 	else: 
 		fwrite.write(support.jobstring(argument2,numbbeads,numbmolecules))
 			
@@ -485,10 +455,14 @@ def Submission(status, RUNDIR, dest_path, folder_run, src_path, run_file, dest_d
 		call(["chmod", "755", fname])
 		#command_pimc_run = "./"+fname + ">"+ dest_dir+"/outpimc"+str(i)+" & "
 		command_pimc_run = "./"+fname + ">outpimc"+str(i)+" & "
-		print command_pimc_run
+		print(command_pimc_run)
 		system(command_pimc_run)
 	else:
-		call(["qsub", fname])
+		#call(["qsub", fname])
+		if (NameOfPartition == 'tapas'):
+			call(["sbatch", "-p", "tapas", fname])
+		else:
+			call(["sbatch", fname])
 		
 
 	if RUNDIR != "scratch":
@@ -588,3 +562,45 @@ mv %s /work/tapas/linear_rotors
 """ % (omp_thread, run_dir, output_dir, src_path, input_file, run_dir, file_rotdens, run_dir, run_dir, qmcinp, exe_file, run_dir, run_dir)
 	return job_string
 
+def jobstring_scratch_sbatch(file_name, value, thread, run_dir, molecule, temperature, numbbeads, final_dir, dest_pimc, NameOfServer):
+	'''
+	This function creats jobstring for #SBATCH script
+	'''
+	if (thread > 24):
+		thread = 24
+	job_name       = str(file_name)+str(value)
+	walltime       = "00-48:00"
+	omp_thread     = str(thread)
+	output_dir     = run_dir+"/results"
+	temperature1   = "%5.3f" % temperature
+	file_rotdens   = dest_pimc+"/"+molecule+"_T"+str(temperature1)+"t"+str(numbbeads)+".rot"
+	logpath        = dest_pimc+"/"+job_name
+
+	input_file     = dest_pimc+"/qmc"+file_name+str(value)+".input"
+	exe_file       = dest_pimc+"/pimc"
+	qmcinp         = "qmc"+file_name+str(value)+".input"
+	if (NameOfServer == "nlogn"):
+		CommandForMove = "mv "+str(run_dir)+" /work/tapas/linear_rotors"
+	if (NameOfServer == "graham"):
+		CommandForMove = " "
+
+	job_string     = """#!/bin/bash
+#SBATCH --job-name=%s
+#SBATCH --output=%s.out
+#SBATCH --time=%s
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --mem-per-cpu=1200mb
+#SBATCH --cpus-per-task=%s
+export OMP_NUM_THREADS=%s
+rm -rf %s
+mkdir -p %s
+mv %s %s
+mv %s %s
+cd %s
+cp %s qmc.input
+cp %s %s
+./pimc
+%s
+""" % (job_name, logpath, walltime, omp_thread, omp_thread, run_dir, output_dir, input_file, run_dir, file_rotdens, run_dir, run_dir, qmcinp, exe_file, run_dir, CommandForMove)
+	return job_string

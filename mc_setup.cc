@@ -614,6 +614,21 @@ void initLattice_config(double **pos)
 	}    // END loop over types
 }
 
+void replInitial_config(double **pos)
+// replicate configurations for all time slices
+{
+    for (int id = 0; id < NDIM; id++)	
+    {
+        for (int atom = 0; atom < NumbAtoms; atom++)
+        {
+            for (int it = 0; it < NumbTimes; it++)
+            {
+	            pos[id][atom*NumbTimes+it] = pos[id][atom*NumbTimes];
+            }
+        }
+    }
+}	
+
 void initChain_config(double **pos)
 {
 	cout<<"in initChain"<<endl;
@@ -632,6 +647,8 @@ void initChain_config(double **pos)
 	NumbAtoms1 = NumbAtoms;
 #endif
 
+	double LatticeTheta = 0.0; //0.25*M_PI;
+	double LatticePhi   = 0.25*M_PI;
     for (int atom = 0; atom < NumbAtoms1; atom++)
     {
         for (int it = 0; it < NumbTimes; it++)
@@ -642,7 +659,10 @@ void initChain_config(double **pos)
 	            pos[id][ii] = shift[id];
 	        }
         }
-		shift[2] += Distance;
+
+		shift[0] += Distance*sin(LatticeTheta)*cos(LatticePhi);
+		shift[1] += Distance*sin(LatticeTheta)*sin(LatticePhi);
+		shift[2] += Distance*cos(LatticeTheta);
     }
 #ifdef ENTANGLEMENT
     for (int id = 0; id < NDIM; id++)
@@ -660,10 +680,14 @@ void initChain_config(double **pos)
 	            pos[id][ii] = shift[id];
 	        }
         }
-		shift[2] += Distance;
+		shift[0] += Distance*sin(LatticeTheta)*cos(LatticePhi);
+		shift[1] += Distance*sin(LatticeTheta)*sin(LatticePhi);
+		shift[2] += Distance*cos(LatticeTheta);
     }
 
-    shift[2] -= Distance;
+	shift[0] -= Distance*sin(LatticeTheta)*cos(LatticePhi);
+	shift[1] -= Distance*sin(LatticeTheta)*sin(LatticePhi);
+	shift[2] -= Distance*cos(LatticeTheta);
     for (int atom = 0; atom < NumbAtoms1; atom++)
     {
         for (int it = 0; it < NumbTimes; it++)
@@ -674,22 +698,9 @@ void initChain_config(double **pos)
 	            pos[id][ii] = shift[id];
 	        }
         }
-		shift[2] -= Distance;
+		shift[0] -= Distance*sin(LatticeTheta)*cos(LatticePhi);
+		shift[1] -= Distance*sin(LatticeTheta)*sin(LatticePhi);
+		shift[2] -= Distance*cos(LatticeTheta);
     }
 #endif
 }
-
-void replInitial_config(double **pos)
-// replicate configurations for all time slices
-{
-    for (int id = 0; id < NDIM; id++)	
-    {
-        for (int atom = 0; atom < NumbAtoms; atom++)
-        {
-            for (int it = 0; it < NumbTimes; it++)
-            {
-	            pos[id][atom*NumbTimes+it] = pos[id][atom*NumbTimes];
-            }
-        }
-    }
-}	

@@ -57,7 +57,7 @@ NUMBEROFBLOCKS     numbblocks_input  0  #5000 0      #  number of blocks and num
 
 MCSKIP_RATIO     mskip_input     # to save information regarding accept ratio
 MCSKIP_TOTAL     mskip_input     # to save accumulated average
-MCSKIP_AVERG     mskip_input       # to evaluate averages
+MCSKIP_AVERG     1 #mskip_input       # to evaluate averages
 #BLOCKSKIP_2D	 2	        # skipped blocks to save 2D densities
 DISTANCE         distance_input
 DIPOLEMOMENT     dipolemoment_input

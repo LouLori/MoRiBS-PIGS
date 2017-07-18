@@ -13,6 +13,7 @@ const double MHZ2RCM    = 3.335640952e-5;  // MHz to cm^-1 conversion factor
 const double AuToDebye     = 1.0/0.39343;
 const double AuToCmInverse = 219474.63137;
 const double AuToKelvin    = 315777.0;
+const double KCalperMolToCmInverse = 349.75509;
 #endif
 
 const double HBAR  = 1.05457266; //  (10^-34 Js)     Planck constant

@@ -3,8 +3,8 @@
 
 #include <fstream>
 
-void   InitMCEstims(void);
-void   DoneMCEstims(void);
+void  InitMCEstims(void);
+void  DoneMCEstims(void);
 void  ResetMCEstims(void);
 
 void SaveDensities1D(const char [], double);
@@ -21,8 +21,10 @@ double GetPotEnergy_Diff(void); //added by Hui Li
 
 double GetPotEnergy_Densities(void);
 double GetPotEnergyPIGS(void);
+double GetPotEnergyCage(double *);
 double GetTotalEnergy(void);
-double *GetCosTheta();
+void GetDipoleCorrelation(double *);
+void GetCosTheta(double &, double *);
 double GetPhi();
 double GetPotEnergy(void);
 double GetKinEnergy(void);
@@ -60,6 +62,7 @@ void GetPermutation(void);
 
 double GetRotEnergy(void);
 double GetRotEnergyPIGS(void);
+double GetRotEnergyCage(void);
 double GetRotPlanarEnergy(void);
 double GetRotE3D(void); // get rotational energy for nonlinear rotor, added by toby
 double GetRotE3Dstep(int, int); // real step in loop of GetRotE3D, added by toby
@@ -84,5 +87,6 @@ extern double srotsum; // total summation of rotational energy
 void VectorNormalisation(double *);
 double DotProduct(double *, double *);
 void CrossProduct(double *, double *, double *);
-double PotFunc(double *, double *, double);
+void UnitVectors(const double *, double *);
+double PotFunc(int , int , const double *, const double *, int );
 #endif  // mc_estim.h

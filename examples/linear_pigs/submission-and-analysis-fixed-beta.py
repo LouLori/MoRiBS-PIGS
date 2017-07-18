@@ -15,9 +15,16 @@ import support
 #   Change the parameters as you requied.                                      |
 #                                                                              |
 #===============================================================================
+status              = "submission"                                            
+status              = "analysis"                                            
+
+NameOfServer        = "nlogn"
+NameOfPartition      = "ntapas"
+
+#NameOfServer        = "graham"
 #TypeCal             = 'PIMC'
-#TypeCal             = 'PIGS'
-TypeCal             = 'ENT'
+TypeCal             = 'PIGS'
+#TypeCal             = 'ENT'
 
 #molecule            = "HF-C60"                                                  
 molecule            = "HF"                                                      
@@ -30,41 +37,43 @@ molecule_rot        = "HF"
 
 numbblocks	        = 400000
 numbmolecules       = 2
-numbpass            = 10
-beta     	        = 0.2
+numbpass            = 500
+beta     	        = 0.1
 
 Rpt                 = 10.05
 dipolemoment        = 1.86
-skip                = 2
 
-status              = "submission"                                            
-status              = "analysis"                                            
 status_rhomat       = "Yes"                                                 
 #RUNDIR              = "work"
 RUNDIR              = "scratch"
 RUNIN               = "nCPU"
 
-nrange              = 51
-postskip            = 0
-preskip             = 0
-particleA           = 1
+loopStart           = 10
+loopEnd             = 51
+skip                = 2
 
+preskip             = 10000
+postskip            = 0
+
+particleA           = 1
 ENT_TYPE = "SWAPTOUNSWAP"
 #ENT_TYPE = "SWAP"
 #ENT_TYPE = "BROKENPATH"
 #ENT_TYPE = "REGULARPATH"
+extra_file_name     = "-Passes"+str(numbpass)
+#extra_file_name     = ""
 
 if (TypeCal == "PIGS"):
 	file1_name      = "Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-beta"+str(beta)+"Kinv-Blocks"+str(numbblocks)
-	file1_name     += "-System"+str(numbmolecules)+str(molecule)+"-e0vsbeads" 
+	file1_name     += extra_file_name+"-System"+str(numbmolecules)+str(molecule)+"-e0vsbeads" 
 
 if (TypeCal == "PIMC"):
 	file1_name      = "PIMC-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-beta"+str(beta)+"Kinv-Blocks"+str(numbblocks)
-	file1_name     += "-System"+str(numbmolecules)+str(molecule)+"-e0vsbeads" 
+	file1_name     += extra_file_name+"-System"+str(numbmolecules)+str(molecule)+"-e0vsbeads" 
 
 if (TypeCal == "ENT"):
 	file1_name      = "Entanglement-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-beta"+str(beta)+"Kinv-Blocks"+str(numbblocks)
-	file1_name     += "-System"+str(numbmolecules)+str(molecule)+"-e0vsbeads"+ENT_TYPE
+	file1_name     += extra_file_name+"-System"+str(numbmolecules)+str(molecule)+"-e0vsbeads"+ENT_TYPE
 
 
 file2_name          = ""                                                           #change param10
@@ -73,14 +82,21 @@ value_min           = 1                                                         
 var                 = "tau"                                                        #change param13
 
 src_path            = os.getcwd()
-dest_path           = "/work/tapas/linear_rotors/"                                 #change param13
-run_file            = "/home/tapas/Moribs-pigs/MoRiBS-PIMC/pimc"                   #change param14
+if (NameOfServer == "graham"):
+    dest_path           = "/scratch/tapas/linear_rotors/"
+else:
+    dest_path           = "/work/tapas/linear_rotors/"
+run_file            = "/home/tapas/Moribs-pigs/MoRiBS-PIMC/pimc"     
 
 if status   == "submission":
 	if RUNDIR == "scratch":
 		dest_path   = "/scratch/tapas/linear_rotors/" 
+			
 
-final_path          = "/work/tapas/linear_rotors/"                                 #change param17
+if (NameOfServer == "graham"):
+	final_path      = "/scratch/tapas/linear_rotors/"     
+else:
+	final_path      = "/work/tapas/linear_rotors/"             
 
 temperature         = 1.0/beta   
 
@@ -96,10 +112,10 @@ if (molecule_rot == "H2"):
 	step            = [1.5,3.0,3.0,2.0,1.0,0.7,0.5,2.5,2.02] #temp 100K            #change param6
 
 if (molecule_rot == "HF"):
-	#step           = [0.7,1.5,1.5,1.5,2.0,2.0,2.0,2.0,2.0,1.9,1.8,1.7,1.6,1.5,1.4,1.3,1.3,1.3,1.2,1.2,1.1,1.1,1.1,1.0,1.0, 1.0]  # 2 HF beta 0.2 K-1 #change param6 for 10 Angstrom PIGS
-	step           = [0.7,1.5,1.5,1.5,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,1.9,1.8,1.7,1.6,1.6,1.5,1.5,1.5]  # 2 HF beta 0.2 K-1 #change param6 for 10 Angstrom PIGS
-	#step           = [0.7, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.5, 1.5, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.0, 1.0, 1.0, 1.0, 1.0]  # 2 HF beta 0.2 K-1 #change param6 for 10 Angstrom PIMC
-	#step           = [4.5,1.5,2.0]  # 2 HF beta 0.1 K-1 PIMC
+	step           	= [0.7,1.5,1.5,1.5,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,1.9,1.8,1.7,1.6,1.6,1.5,1.5,1.5,1.4,1.4,1.4,1.4,1.4,1.3,1.3,1.3,1.3,1.3]  
+					# 2 HF beta 0.1 K-1 #change param6 for 10.05 Angstrom and Dipole Moment 1.86 Debye PIGS
+	#step           = [0.7, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.5, 1.5, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.0, 1.0, 1.0, 1.0, 1.0]  
+					# 2 HF beta 0.2 K-1 #change param6 for 10 Angstrom PIMC
 
 #===============================================================================
 #                                                                              |
@@ -108,7 +124,10 @@ if (molecule_rot == "HF"):
 #                                                                              |
 #===============================================================================
 if status == "submission":
-	dest_pimc = "/work/tapas/linear_rotors/"+file1_name+"PIMC"
+	if (NameOfServer == "graham"):
+		dest_pimc = "/scratch/tapas/linear_rotors/"+file1_name+"PIMC"
+	else:
+		dest_pimc = "/work/tapas/linear_rotors/"+file1_name+"PIMC"
 	call(["rm", "-rf",  dest_pimc])
 	call(["mkdir", "-p", dest_pimc])
 	call(["cp", run_file, dest_pimc])
@@ -119,50 +138,41 @@ if status == "analysis":
 	if (TypeCal == "PIGS"):
 		file_output             = "Energy-vs-"+str(var)+"-fixed-"
 		file_output            += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
-		file_output            += "-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+".txt"
+		file_output            += extra_file_name+"-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+".txt"
 
 		file_output_angularDOF  = "AngularDOF-vs-"+str(var)+"-fixed-"
 		file_output_angularDOF += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
-		file_output_angularDOF += "-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+".txt"
-
-		file_output_angularDOF1  = "AngularDOF-vs-"+str(var)+"-fixed-"
-		file_output_angularDOF1 += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
-		file_output_angularDOF1 += "-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+"-for-zdir.txt"
+		file_output_angularDOF += extra_file_name+"-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+".txt"
 		
-		call(["rm", file_output, file_output_angularDOF, file_output_angularDOF1])
+		call(["rm", file_output, file_output_angularDOF])
 	
 	if (TypeCal == "PIMC"):
 		file_output             = "PIMC-Energy-vs-"+str(var)+"-fixed-"
 		file_output            += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
-		file_output            += "-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+".txt"
+		file_output            += extra_file_name+"-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+".txt"
 
 		file_output_angularDOF  = "PIMC-AngularDOF-vs-"+str(var)+"-fixed-"
 		file_output_angularDOF += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
-		file_output_angularDOF += "-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+".txt"
+		file_output_angularDOF += extra_file_name+"-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+".txt"
 
-		file_output_angularDOF1  = "PIMC-AngularDOF-vs-"+str(var)+"-fixed-"
-		file_output_angularDOF1 += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
-		file_output_angularDOF1 += "-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+"-for-zdir.txt"
-
-		call(["rm", file_output, file_output_angularDOF, file_output_angularDOF1])
+		call(["rm", file_output, file_output_angularDOF])
 	
 	if (TypeCal == "ENT"):
 		file_output      = "Entropy-vs-"+str(var)+"-fixed-"
 		file_output     += "beta"+str(beta)+"Kinv-Rpt"+str(Rpt)+"Angstrom-DipoleMoment"+str(dipolemoment)+"Debye-Blocks"+str(numbblocks)
-		file_output     += "-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+"-"+ENT_TYPE+".txt"
+		file_output     += extra_file_name+"-System"+str(numbmolecules)+str(molecule)+"-preskip"+str(preskip)+"-postskip"+str(postskip)+"-"+ENT_TYPE+".txt"
 
 		call(["rm", file_output])
 	
 	
 	if (TypeCal == "ENT"):
 		fanalyze             = open(file_output, "a")
-		fanalyze.write(support.fmt_entropy(status,var,ENT_TYPE))
+		fanalyze.write(support.fmtAverageEntropy(status,var,ENT_TYPE))
 	else:
 		fanalyze             = open(file_output, "a")           
-		fanalyze.write(support.fmt_energy(status,var))
+		fanalyze.write(support.fmtAverageEnergy(status,var))
 		fanalyze_angularDOF  = open(file_output_angularDOF, "a")           
-		fanalyze_angularDOF.write(support.fmt_angle(status,var))
-		fanalyze_angularDOF1  = open(file_output_angularDOF1, "a")           
+		fanalyze_angularDOF.write(support.fmtAverageOrientation(status,var))
 	#support.FileOutput(status, TypeCal, var, beta, Rpt, dipolemoment, numbblocks, numbmolecules, molecule, trunc)
 
 if (TypeCal == "ENT"):
@@ -172,12 +182,11 @@ if (TypeCal == "ENT"):
 #list_nb = [8,16,32,64,96,128]
 #skip    = 2
 #for i in list_nb:
-skipBefore = 9
 
-for i in range(nrange):                                                
+for i in range(loopStart, loopEnd, skip):                                                
 	if (TypeCal == 'PIMC'):
 
-		if (i>skipBefore and i%skip == 0):
+		if (i%skip == 0):
 			value = i
 			tau          = beta/value
 			numbbeads    = value
@@ -185,24 +194,23 @@ for i in range(nrange):
 			dest_dir     = dest_path + folder_run 
 
 			if status   == "submission":
-				support.Submission(status, RUNDIR, dest_path, folder_run, src_path, run_file, dest_dir, Rpt, numbbeads, i, skip, step, temperature,numbblocks,numbpass,molecule_rot,numbmolecules,dipolemoment, status_rhomat, TypeCal, argument2, final_path, dest_pimc, RUNIN, particleA)
+				support.Submission(status, RUNDIR, dest_path, folder_run, src_path, run_file, dest_dir, Rpt, numbbeads, i, skip, step, temperature,numbblocks,numbpass,molecule_rot,numbmolecules,dipolemoment, status_rhomat, TypeCal, argument2, final_path, dest_pimc, RUNIN, particleA, NameOfServer, NameOfPartition)
 
 			if status == "analysis":
 
 				variable          = tau
 				try:
 					if (TypeCal == "ENT"):
-						fanalyze.write(support.outputstr_entropy(numbbeads,variable,dest_dir,preskip,postskip))
+						fanalyze.write(support.GetAverageEntropy(numbbeads,variable,dest_dir,preskip,postskip))
 					else:
-						fanalyze.write(support.outputstr_energy(numbbeads,variable,dest_dir,preskip,postskip))
-						fanalyze_angularDOF.write(outputstr_angle(support.numbbeads,variable,dest_dir,preskip,postskip))
-						fanalyze_angularDOF1.write(outputstr_angle1(support.numbbeads,variable,dest_dir,preskip,postskip))
+						fanalyze.write(support.GetAverageEnergy(numbbeads,variable,dest_dir,preskip,postskip))
+						fanalyze_angularDOF.write(GetAverageOrientation(support.numbbeads,variable,dest_dir,preskip,postskip))
 				except:
 					pass
 	else:
-		if (i>skipBefore and i % skip == 0 ):
+		if (i % skip == 0 ):
 
-			if i % 2 != 0:
+			if ((i % 2) != 0):
 				value        = i
 			else:
 				value        = i+value_min
@@ -212,18 +220,17 @@ for i in range(nrange):
 			dest_dir     = dest_path + folder_run 
 
 			if status   == "submission":
-				support.Submission(status, RUNDIR, dest_path, folder_run, src_path, run_file, dest_dir, Rpt, numbbeads, i, skip, step, temperature,numbblocks,numbpass,molecule_rot,numbmolecules,dipolemoment, status_rhomat, TypeCal, argument2, final_path, dest_pimc, RUNIN, particleA)
+				support.Submission(status, RUNDIR, dest_path, folder_run, src_path, run_file, dest_dir, Rpt, numbbeads, i, skip, step, temperature,numbblocks,numbpass,molecule_rot,numbmolecules,dipolemoment, status_rhomat, TypeCal, argument2, final_path, dest_pimc, RUNIN, particleA, NameOfServer, NameOfPartition)
 
 			if status == "analysis":
 
 				variable          = tau
 				try:
 					if (TypeCal == "ENT"):
-						fanalyze.write(support.outputstr_entropy(numbbeads,variable,dest_dir,preskip,postskip,ENT_TYPE))
+						fanalyze.write(support.GetAverageEntropy(numbbeads,variable,dest_dir,preskip,postskip,ENT_TYPE))
 					else:
-						fanalyze.write(support.outputstr_energy(numbbeads,variable,dest_dir,preskip,postskip))
-						fanalyze_angularDOF.write(support.outputstr_angle(numbbeads,variable,dest_dir,preskip,postskip))
-						fanalyze_angularDOF1.write(support.outputstr_angle1(numbbeads,variable,dest_dir,preskip,postskip))
+						fanalyze.write(support.GetAverageEnergy(numbbeads,variable,dest_dir,preskip,postskip))
+						fanalyze_angularDOF.write(support.GetAverageOrientation(numbbeads,variable,dest_dir,preskip,postskip))
 				except:
 					pass
 
@@ -232,13 +239,7 @@ if status == "analysis":
 	fanalyze.close()
 	if (TypeCal != "ENT"):
 		fanalyze_angularDOF.close()
-		fanalyze_angularDOF1.close()
 	call(["cat",file_output])
-'''
 	print
 	print
 	call(["cat",file_output_angularDOF])
-	print
-	print
-	call(["cat",file_output_angularDOF1])
-'''
