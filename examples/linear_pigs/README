@@ -1,0 +1,31 @@
+For PIGS:
+
+For screened dipole:
+
+beta convergence:
+
+tau convergence:
+1. PIGS-RotDOFs-Rpt10.05Angstrom-DipoleMoment0.45Debye-beta0.2Kinv-Blocks100000-Passes100-System2HF-e0vsbeadsPIMC/  COMPLETE
+2. PIGS-RotDOFs-Rpt10.05Angstrom-DipoleMoment0.45Debye-beta0.2Kinv-Blocks100000-Passes200-System2HF-e0vsbeadsPIMC/  COMPLETE
+3. PIGS-RotDOFs-Rpt10.05Angstrom-DipoleMoment0.45Debye-beta0.2Kinv-Blocks100000-Passes400-System2HF-e0vsbeadsPIMC/  COMPLETE
+4. PIGS-RotDOFs-Rpt10.05Angstrom-DipoleMoment0.45Debye-beta0.2Kinv-Blocks200000-Passes200-System2HF-e0vsbeadsPIMC/  Partially Yet to complete 85
+5. PIGS-RotDOFs-Rpt10.05Angstrom-DipoleMoment0.45Debye-beta0.2Kinv-Blocks200000-Passes400-System2HF-e0vsbeadsPIMC/  Partially
+
+6. PIGS-RotDOFs-Rpt10.05Angstrom-DipoleMoment0.45Debye-beta0.2Kinv-Blocks200000-Passes200-System3HF-e0vsbeadsPIMC/
+7. PIGS-RotDOFs-Rpt10.05Angstrom-DipoleMoment0.45Debye-beta0.2Kinv-Blocks200000-Passes400-System3HF-e0vsbeadsPIMC/
+
+8. PIGS-RotDOFs-Rpt10.05Angstrom-DipoleMoment0.45Debye-beta0.2Kinv-Blocks200000-Passes200-System4HF-e0vsbeadsPIMC/
+
+10. PIGS-RotDOFs-Rpt10.05Angstrom-DipoleMoment0.45Debye-beta0.2Kinv-Blocks200000-Passes400-System5HF-e0vsbeadsPIMC/
+
+
+For ENT:
+
+For screened dipole:
+
+beta convergence:
+1. ENT-RotDOFs-Rpt10.05Angstrom-DipoleMoment0.45Debye-tau0.005Kinv-Blocks200000-Passes100-System2HF-ParticleA1-e0vsbeads-SWAPTOUNSWAPPIMC/ COMPLETE
+2. ENT-RotDOFs-Rpt10.05Angstrom-DipoleMoment0.45Debye-tau0.005Kinv-Blocks200000-Passes200-System2HF-ParticleA1-e0vsbeads-SWAPTOUNSWAPPIMC/ PARTIALLY
+
+tau convergence:
+1. ENT-RotDOFs-Rpt10.05Angstrom-DipoleMoment0.45Debye-beta0.2Kinv-Blocks200000-Passes200-System2HF-ParticleA1-e0vsbeads-SWAPTOUNSWAPPIMC/

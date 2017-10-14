@@ -134,8 +134,8 @@ def GetAverageEnergy(TypeCal,numbbeads,variable,final_dir_in_work,preskip,postsk
 	'''
 	This function gives us the output 
 	'''
+	print(final_dir_in_work)
 	if (TypeCal == "PIMC"):
-		print(final_dir_in_work)
 		col_block, col_kin, col_rot, col_pot, col_tot = genfromtxt(final_dir_in_work+"/results/pigs.eng",unpack=True, usecols=[0,1,2,3,4], skip_header=preskip, skip_footer=postskip)
 		print(len(col_tot))
 	
@@ -153,25 +153,8 @@ def GetAverageEnergy(TypeCal,numbbeads,variable,final_dir_in_work,preskip,postsk
 		output  += "\n"
 
 	if (TypeCal == "PIGS"):
-		print(final_dir_in_work)
 		col_block, col_rot, col_rot1, col_pot, col_tot = genfromtxt(final_dir_in_work+"/results/pigs.eng",unpack=True, usecols=[0,1,2,3,4], skip_header=preskip, skip_footer=postskip)
 		print(len(col_tot))
-	
-		mean_rot      = np.mean(col_rot)
-		mean_rot1     = np.mean(col_rot1)
-		mean_pot      = np.mean(col_pot)
-		mean_tot      = np.mean(col_tot)
-
-		error_rot     = np.std(col_rot,ddof=1)/sqrt(len(col_rot))
-		error_rot1    = np.std(col_rot1,ddof=1)/sqrt(len(col_rot1))
-		error_pot     = np.std(col_pot,ddof=1)/sqrt(len(col_pot))
-		error_tot     = np.std(col_tot,ddof=1)/sqrt(len(col_tot))
-
-		output  = '{0:10d}{1:20.5f}{2:20.5f}{3:20.5f}{4:20.5f}{5:20.5f}{6:20.5f}{7:20.5f}{8:20.5f}{9:20.5f}'.format(numbbeads, variable, mean_rot, mean_rot1, mean_pot, mean_tot, error_rot, error_rot1, error_pot, error_tot)
-		output  += "\n"
-
-	if (TypeCal == "ENT"):
-		col_block, col_rot, col_rot1, col_pot, col_tot = genfromtxt(final_dir_in_work+"/results/pigs.eng",unpack=True, usecols=[0,1,2,3,4], skip_header=preskip, skip_footer=postskip)
 	
 		mean_rot      = np.mean(col_rot)
 		mean_rot1     = np.mean(col_rot1)
@@ -499,7 +482,7 @@ cd %s
 cp %s qmc.input
 cp %s %s
 ./pimc
-mv %s /work/tapas/linear_rotors
+mv %s /work/tapas/nonlinear-molecule
 """ % (job_name, walltime, processors, logpath, job_name, logpath, job_name, omp_thread, run_dir, output_dir, input_file, run_dir, file_rotdens, run_dir, run_dir, qmcinp, exe_file, run_dir, run_dir)
 	return job_string
 
@@ -594,7 +577,7 @@ cd %s
 cp %s qmc.input
 cp %s %s
 ./pimc 
-mv %s /work/tapas/linear_rotors
+mv %s /work/tapas/nonlinear-molecule
 """ % (omp_thread, run_dir, output_dir, src_dir, input_file, run_dir, file_rotdens, run_dir, run_dir, qmcinp, exe_file, run_dir, run_dir)
 	return job_string
 
@@ -618,7 +601,7 @@ def jobstring_sbatch(RUNDIR, file_name, value, thread, folder_run_path, molecule
 	qmcinp         = "qmcbeads"+str(value)+".input"
 	cagepot_file   = dir_run_input_pimc+"/hfc60.pot"
 	if (RUNDIR == "scratch"):
-		CommandForMove = "mv "+str(folder_run_path)+" /work/tapas/linear_rotors"
+		CommandForMove = "mv "+str(folder_run_path)+" /work/tapas/nonlinear-molecule"
 	if (RUNDIR == "work"):
 		CommandForMove = " "
 
@@ -840,59 +823,22 @@ class GetFileNameAnalysis:
 				if (self.TransMove == "Yes" and self.RotMove == "Yes"):
 					frontName += "TransAndRotDOFs-"
 					file_output1  = frontName+"DipoleMoment"+str(self.dipolemoment)+"Debye-Entropy-"
-					file_output2  = frontName+"DipoleMoment"+str(self.dipolemoment)+"Debye-Energy-"
-					file_output3  = frontName+"DipoleMoment"+str(self.dipolemoment)+"Debye-correlation-"
-					file_output4  = frontName+"DipoleMoment"+str(self.dipolemoment)+"Debye-total-correlation-function-"
-					file_output5  = frontName+"DipoleMoment"+str(self.dipolemoment)+"Debye-X-component-correlation-function-"
-					file_output6  = frontName+"DipoleMoment"+str(self.dipolemoment)+"Debye-Y-component-correlation-function-"
-					file_output7  = frontName+"DipoleMoment"+str(self.dipolemoment)+"Debye-Z-component-correlation-function-"
-					file_output8  = frontName+"DipoleMoment"+str(self.dipolemoment)+"Debye-XandY-component-correlation-function-"
 
 				if (self.TransMove != "Yes" and self.RotMove == "Yes"):
 					frontName += "RotDOFs-"
 					file_output1  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-DipoleMoment"+str(self.dipolemoment)+"Debye-Entropy-"
-					file_output2  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-DipoleMoment"+str(self.dipolemoment)+"Debye-Energy-"
-					file_output3  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-DipoleMoment"+str(self.dipolemoment)+"Debye-correlation-"
-					file_output4  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-DipoleMoment"+str(self.dipolemoment)+"Debye-total-correlation-function-"
-					file_output5  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-DipoleMoment"+str(self.dipolemoment)+"Debye-X-component-correlation-function-"
-					file_output6  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-DipoleMoment"+str(self.dipolemoment)+"Debye-Y-component-correlation-function-"
-					file_output7  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-DipoleMoment"+str(self.dipolemoment)+"Debye-Z-component-correlation-function-"
-					file_output8  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-DipoleMoment"+str(self.dipolemoment)+"Debye-XandY-component-correlation-function-"
 
 			if (self.molecule_rot == "H2"):
 				if (self.TransMove == "Yes" and self.RotMove == "Yes"):
 					frontName += "TransAndRotDOFs-"
 					file_output1  = frontName+"Entropy-"
-					file_output2  = frontName+"Energy-"
-					file_output3  = frontName+"correlation-"
-					file_output4  = frontName+"total-correlation-function-"
-					file_output5  = frontName+"X-component-correlation-function-"
-					file_output6  = frontName+"Y-component-correlation-function-"
-					file_output7  = frontName+"Z-component-correlation-function-"
-					file_output8  = frontName+"XandY-component-correlation-function-"
 
 				if (self.TransMove != "Yes" and self.RotMove == "Yes"):
 					frontName += "RotDOFs-"
 					file_output1  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-Entropy-"
-					file_output2  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-Energy-"
-					file_output3  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-correlation-"
-					file_output4  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-total-correlation-function-"
-					file_output5  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-X-component-correlation-function-"
-					file_output6  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-Y-component-correlation-function-"
-					file_output7  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-Z-component-correlation-function-"
-					file_output8  = frontName+"Rpt"+str(self.Rpt)+"Angstrom-XandY-component-correlation-function-"
 
-			self.SaveEntropy      = self.src_dir+"/ResultsOfPIGSENT/"+file_output1+mainFileName+"-"+self.ENT_TYPE+".txt"
+			self.SaveEntropy           = self.src_dir+"/ResultsOfPIGSENT/"+file_output1+mainFileName+"-"+self.ENT_TYPE+".txt"
 			call(["rm", self.SaveEntropy])
-			self.SaveEnergy       = self.src_dir+"/ResultsOfPIGSENT/"+file_output2+mainFileName+"-"+self.ENT_TYPE+".txt"
-			self.SaveCorr         = self.src_dir+"/ResultsOfPIGSENT/"+file_output3+mainFileName+"-"+self.ENT_TYPE+".txt"
-			self.SaveTotalCorr    = self.src_dir+"/ResultsOfPIGSENT/"+file_output4+mainFileName+"-"+self.ENT_TYPE+".txt"
-			self.SaveXCorr        = self.src_dir+"/ResultsOfPIGSENT/"+file_output5+mainFileName+"-"+self.ENT_TYPE+".txt"
-			self.SaveYCorr        = self.src_dir+"/ResultsOfPIGSENT/"+file_output6+mainFileName+"-"+self.ENT_TYPE+".txt"
-			self.SaveZCorr        = self.src_dir+"/ResultsOfPIGSENT/"+file_output7+mainFileName+"-"+self.ENT_TYPE+".txt"
-			self.SaveXYCorr       = self.src_dir+"/ResultsOfPIGSENT/"+file_output8+mainFileName+"-"+self.ENT_TYPE+".txt"
-			call(["rm", self.SaveEnergy, self.SaveCorr])
-			call(["rm", self.SaveTotalCorr, self.SaveXCorr, self.SaveYCorr, self.SaveZCorr, self.SaveXYCorr])
 
 class GetFileNamePlot:
 	def __init__(self, TypeCal1, molecule_rot1, TransMove1, RotMove1, variableName1, Rpt1, dipolemoment1, parameterName1, parameter1, numbblocks1, numbpass1, numbmolecules1, molecule1, ENT_TYPE1, preskip1, postskip1, extra1, src_dir1, particleA1):

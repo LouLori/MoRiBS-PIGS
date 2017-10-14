@@ -35,21 +35,29 @@ extern int     NUMB_MOLCS;   // total number of molecules
 
 extern int     NUMB_ATOMTYPES; // total number of atoms types 
 extern int     NUMB_MOLCTYPES; // total number of molecules types
-#ifdef SWAPTOUNSWAP
 extern string  Distribution;
 extern double  MCAccepSwap;
 extern double  MCAccepUnSwap;
+extern double DipoleMomentAU2;
+extern double RR;
+#ifdef PROPOSED
+extern int iChooseOld;
+extern int iChoose;
+extern int iChooseNew;
+extern int NPHI;
+extern int NCOST;
+void proposedGrid();
+extern double *costProposed;
+extern double *phiProposed;
+extern double dcost;
+extern double dphi;
 #endif
 
 extern int     NDIM;
 extern double  Temperature;
-#ifdef GETR
 extern double  Distance;
-#endif
 extern double DipoleMoment;
-#ifdef BIPARTITION
 extern int     NumbParticle;
-#endif
 extern double  Density;
 extern double  BoxSize;
 
@@ -123,9 +131,6 @@ extern long int NumberOfEQBlocks;  // number of equilibr blocks
 const int SizeRotDen=181*361*361;
 const int SizePotTab=501*181*181;
 
-#ifdef MOLECULEINCAGE
-extern int  MOLECINCAGE;
-#endif
 //------------- MPI PARAMETERS ----------------------------
 extern int NProcs; // the number of processors as a global variable
 extern int chunksize;  // the size of a chunk of rotational time slices treated by MPI
@@ -204,6 +209,9 @@ extern double ** RCOMC60;     //store the read in MCCoords
 //extern double ** TZMAT; // a temporary matrix for testing data structure
 
 extern double ** newcoords;  // buffer for new coordinates
+#ifdef PROPOSED
+extern double ** tempcoords;  // buffer for new coordinates
+#endif
 extern int     * atom_list;  // buffer for atom labels
 
 extern double *  rhoprp;     // rotatinal propagator for non-linear rotor
@@ -243,5 +251,6 @@ void MCInit(void);
 void MCConfigInit(void);
 
 void MCSetUnits_HO_TEST(void);
+void ParamsPotential(void);
 
 #endif  //MM_setup.h

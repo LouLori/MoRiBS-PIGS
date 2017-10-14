@@ -9,12 +9,10 @@ const double HARTREE2KL = 3.157732e+05;    // hartree to Kelvin conversion facto
 const double CMRECIP2KL = 1.4387672;       // cm^-1 to Kelvin conversion factor
 const double MHZ2RCM    = 3.335640952e-5;  // MHz to cm^-1 conversion factor
 
-#ifdef UNITS
 const double AuToDebye     = 1.0/0.39343;
 const double AuToCmInverse = 219474.63137;
 const double AuToKelvin    = 315777.0;
 const double KCalperMolToCmInverse = 349.75509;
-#endif
 
 const double HBAR  = 1.05457266; //  (10^-34 Js)     Planck constant
 const double AMU   = 1.6605402;  //  (10^-27 kg)     atomic mass unit 
@@ -68,7 +66,7 @@ const double B_CO    = 2.766086924;      // [K]  CO  = 1.922528955 cm^-1   exp. 
 const double B_HCN   = 2.12682;         // [K]  1.478 221 834 cm^-1 JCP 114 851 (2001)
 
 const double B_HCCCN = 0.218317;        // [K]  4549 MHz [JCP 119 8379 (2003)] approx 0.1517383 cm^-1
-const double B_HF    = 20.9561;         // cm^-1
+const double B_HF    = 20.561;         // cm^-1
 
 // known atom/molecule types
 

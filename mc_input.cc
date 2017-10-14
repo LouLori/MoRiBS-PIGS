@@ -10,6 +10,7 @@
 #include "mc_utils.h"
 #include "mc_poten.h"
 #include "mc_qworm.h"
+#include "rngstream.h"
 
 //----- INPUT PARAMETERS----------------------------
 
@@ -28,7 +29,6 @@ const char IO_TEMPERATURE[]    = "TEMPERATURE";
 const char IO_ATOM[]           = "ATOM";
 const char IO_MOLECULE[]       = "MOLECULE"; // linear molecule
 const char IO_LINEARROTORS[]   = "LINEARROTORS"; // linear rotors
-const char IO_MOLECINCAGE[]    = "MOLECINCAGE";
 // Toby's value
 const char IO_NONLINEAR[]      = "NONLINEAR";
 const char IO_PLANAR[]         = "PLANAR";
@@ -61,13 +61,10 @@ const char IO_MCSKIP_AVERG[]   = "MCSKIP_AVERG";
 const char STATUS_STARTBLOCK[] = "STARTBLOCK";
 
 //--------------------------------------------------
-#ifdef GETR
 const char IO_DISTANCE[]       = "DISTANCE";
-#endif
 const char IO_DIPOLEMOMENT[]   = "DIPOLEMOMENT";
-#ifdef BIPARTITION
 const char IO_NUMBPARTICLE[]       = "NUMBPARTICLE";
-#endif
+string PotentialRead = "nopot";
 
 string MasterDir;
 string OutputDir;
@@ -112,262 +109,245 @@ void IOReadParams(const char in_file[],int & mc_status)
    string _srot_type;      // the molecule type to sample the rotational degrees of freedom
    string _srot_dens;      // the file name with the rotational density matrix
 
-#ifdef MOLECULEINCAGE
-   MOLECINCAGE  = 0;
-#endif
-
    InitMCCoords = 0;
 
    MCStartBlock = 0;
    
-   string params;
-   while (inf>>params)
-   {  
-     if (params==IO_RESTART)
-     {
-       mc_status = 1;  // restart 
-     }
-     else
-     if (params==IO_MASTERDIR)
-     {
-        inf>>MasterDir;
-     }
-     else
-     if (params==IO_OUTPUTDIR)
-     {
-        inf>>OutputDir;
-     }
-     else
-     if (params==IO_FILENAMEPREFIX)
-     {
-        inf>>FNPrefix;
-     }
-     else
-     if (params==IO_TEMPERATURE)            
-     { 
-        inf>>Temperature;
-     }
-     else 
-     if (params==IO_DENSITY)            
-     { 
-        inf>>Density;
-     }
-     else 
-       if ((params==IO_ATOM)||(params==IO_MOLECULE)||(params==IO_LINEARROTORS)||(params==IO_NONLINEAR)||(params==IO_PLANAR))
-     {
-        inf>>MCAtom[type].type;          // [1] 
-        inf>>MCAtom[type].numb;          // [2]
+	string params;
+  	while (inf>>params)
+   	{  
+     	if (params==IO_RESTART)
+     	{
+       		mc_status = 1;  // restart 
+     	}
+     	else
+     	if (params==IO_MASTERDIR)
+     	{
+        	inf>>MasterDir;
+     	}
+     	else
+     	if (params==IO_OUTPUTDIR)
+     	{
+        	inf>>OutputDir;
+     	}
+     	else
+     	if (params==IO_FILENAMEPREFIX)
+     	{
+        	inf>>FNPrefix;
+     	}
+     	else
+     	if (params==IO_TEMPERATURE)            
+     	{ 
+        	inf>>Temperature;
+     	}
+     	else 
+     	if (params==IO_DENSITY)            
+     	{ 
+        	inf>>Density;
+     	}
+     	else 
+       	if ((params==IO_ATOM)||(params==IO_MOLECULE)||(params==IO_LINEARROTORS)||(params==IO_NONLINEAR)||(params==IO_PLANAR))
+     	{
+        	inf>>MCAtom[type].type;          // [1] 
+        	inf>>MCAtom[type].numb;          // [2]
 
-        if(MCAtom[type].numb < 0)
-        {
-           ISPHER = 1;
-           MCAtom[type].numb = -MCAtom[type].numb;
-        }
+        	if(MCAtom[type].numb < 0)
+        	{
+           		ISPHER = 1;
+           		MCAtom[type].numb = -MCAtom[type].numb;
+        	}
 
-        string sstat;
-        int     stat; 
-        inf>>sstat;                      // [3]
+        	string sstat;
+        	int     stat; 
+        	inf>>sstat;                      // [3]
  
-        if      (sstat == STATISTICS[BOSE ]) stat = BOSE; 
-        else if (sstat == STATISTICS[BOLT ]) stat = BOLT; 
-//      else if (sstat == STATISTICS[FERMI]) stat = FERMI; 
-        else 
-        nrerror(_proc_,"Unknown statistics");
+        	if      (sstat == STATISTICS[BOSE ]) stat = BOSE; 
+        	else if (sstat == STATISTICS[BOLT ]) stat = BOLT; 
+//      	else if (sstat == STATISTICS[FERMI]) stat = FERMI; 
+        	else 
+        	nrerror(_proc_,"Unknown statistics");
 
-        MCAtom[type].stat = stat;
+        	MCAtom[type].stat = stat;
 
-        inf>>MCAtom[type].mcstep;        // [4]
-        inf>>MCAtom[type].levels;        // [5]
-#ifdef IOWRITE
-        inf>>MCAtom[type].fpot;          // [6]
+        	inf>>MCAtom[type].mcstep;        // [4]
+        	inf>>MCAtom[type].levels;        // [5]
+        	inf>>MCAtom[type].fpot;          // [6]
 
-        string smod;                     // model of interaction 
-        int    pmod; 
-        inf>>smod;                       // [7]
+       		string smod;                     // model of interaction 
+       		int    pmod; 
+       		inf>>smod;                       // [7]
 
-        if      (smod == PMODEL[PRIMITIVE]) pmod = PRIMITIVE; 
-        else if (smod == PMODEL[EFFECTIVE]) pmod = EFFECTIVE; 
-        else 
-        nrerror(_proc_,"Unknown model of interaction");
+       		if      (smod == PMODEL[PRIMITIVE]) pmod = PRIMITIVE; 
+       		else if (smod == PMODEL[EFFECTIVE]) pmod = EFFECTIVE; 
+       		else 
+       		nrerror(_proc_,"Unknown model of interaction");
 
-        MCAtom[type].pmod = pmod;
-#endif
+       		MCAtom[type].pmod = pmod;
 
 // ------- set atom/molecule flag ------------------------- 
 
-        MCAtom[type].molecule = 0;  // atom
+        	MCAtom[type].molecule = 0;  // atom
 
 	
-        if (params == IO_MOLECULE)
-	  MCAtom[type].molecule = 1;  // molecular impurity
-        else if (params == IO_NONLINEAR)
-	  MCAtom[type].molecule = 2;
-	else if (params == IO_PLANAR)
-	  MCAtom[type].molecule = 3;
-	else if (params == IO_LINEARROTORS) //Added by Tapas Sahoo
-	  MCAtom[type].molecule = 4;
-        else                        // atom
-	  if (IMPURITY) nrerror(_proc_,"Molecules should follow atoms in input file");
+        	if (params == IO_MOLECULE)
+	  		MCAtom[type].molecule = 1;  // molecular impurity
+        	else if (params == IO_NONLINEAR)
+	  		MCAtom[type].molecule = 2;
+			else if (params == IO_PLANAR)
+	  		MCAtom[type].molecule = 3;
+			else if (params == IO_LINEARROTORS) //Added by Tapas Sahoo
+	  		MCAtom[type].molecule = 4;
+        	else                        // atom
+	  		if (IMPURITY) nrerror(_proc_,"Molecules should follow atoms in input file");
 	//      the latter is important, for example, for the density estimators
 
-        if (MCAtom[type].numb > 0)   // ignore this atom/molecule type if N <= 0 
-        {
-           if ((MCAtom[type].molecule == 1)||(MCAtom[type].molecule == 2)||(MCAtom[type].molecule == 3)||(MCAtom[type].molecule == 4))//Modified by Tapas Sahoo
-           {  
-              IMPURITY         = true;
-              NUMB_MOLCS      += MCAtom[type].numb;
-              NUMB_MOLCTYPES  ++;
-           }
-           else
-           {
-              NUMB_ATOMS      += MCAtom[type].numb;
-              NUMB_ATOMTYPES  ++;
-           }
+        	if (MCAtom[type].numb > 0)   // ignore this atom/molecule type if N <= 0 
+        	{
+           		if ((MCAtom[type].molecule == 1)||(MCAtom[type].molecule == 2)||(MCAtom[type].molecule == 3)||(MCAtom[type].molecule == 4))//Modified by Tapas Sahoo
+           		{  
+              		IMPURITY         = true;
+              		NUMB_MOLCS      += MCAtom[type].numb;
+              		NUMB_MOLCTYPES  ++;
+           		}
+           		else
+           		{
+              		NUMB_ATOMS      += MCAtom[type].numb;
+              		NUMB_ATOMTYPES  ++;
+           		}
 
-           numb += MCAtom[type].numb;        
-           type++;                         // SHOULD BE THE LAST LINE IN THIS SECTION
-        } 
-     }
-     else 
-     if (params==IO_NUMBEROFSLICES)
-     {
-         inf>>NumbTimes;
-     }  
-     else 
-     if (params==IO_NUMBEROFPASSES)
-     {
-         inf>>NumberOfMCPasses;
-     }  
-     else 
-     if (params==IO_NUMBEROFBLOCKS)
-     {
-         inf>>NumberOfMCBlocks>>NumberOfEQBlocks;
-     }
-     else
-     if (params==IO_INITIALBLOCK)
-     {
-         inf>>MCStartBlock;
-     }
-     else
-     if (params==IO_REFLECTY)
-     {
-         inf>>IREFLY;
-     }
-     else
-     if (params==IO_REFLECTX)
-     {
-         inf>>IREFLX;
-     }
-     if (params==IO_REFLECTZ)
-     {
-         inf>>IREFLZ;
-     }
-     else
-     if (params==IO_ROTSYM)
-     {
-         IROTSYM=1;
-         inf>>NFOLD_ROT;
-     }
-     else
-     if (params==IO_DIMENSION)
-     {
-         inf>>NDIM;
-     }
-     else
-     if (params==IO_ROTATION)
-     {
-        inf>>_srot_type;   //   [1] the molecule type for rotational sampling
+           		numb += MCAtom[type].numb;        
+           		type++;                         // SHOULD BE THE LAST LINE IN THIS SECTION
+        	} 
+     	}
+     	else 
+     	if (params==IO_NUMBEROFSLICES)
+     	{
+         	inf>>NumbTimes;
+     	}  
+     	else 
+     	if (params==IO_NUMBEROFPASSES)
+     	{
+         	inf>>NumberOfMCPasses;
+     	}  
+     	else 
+     	if (params==IO_NUMBEROFBLOCKS)
+     	{
+         	inf>>NumberOfMCBlocks>>NumberOfEQBlocks;
+     	}
+     	else
+     	if (params==IO_INITIALBLOCK)
+     	{
+         	inf>>MCStartBlock;
+     	}
+     	else
+     	if (params==IO_REFLECTY)
+     	{
+         	inf>>IREFLY;
+     	}
+     	else
+     	if (params==IO_REFLECTX)
+     	{
+         	inf>>IREFLX;
+     	}
+     	if (params==IO_REFLECTZ)
+     	{
+         	inf>>IREFLZ;
+     	}
+     	else
+     	if (params==IO_ROTSYM)
+     	{
+         	IROTSYM=1;
+         	inf>>NFOLD_ROT;
+     	}
+     	else
+     	if (params==IO_DIMENSION)
+     	{
+         	inf>>NDIM;
+     	}
+     	else
+     	if (params==IO_ROTATION)
+     	{
+        	inf>>_srot_type;   //   [1] the molecule type for rotational sampling
  
-        inf>>_rot_step;    //   [2] the rotational MC step(s) 
-//      inf>>_srot_dens;   //   [3] the file name with the rotational density
+        	inf>>_rot_step;    //   [2] the rotational MC step(s) 
+//      	inf>>_srot_dens;   //   [3] the file name with the rotational density
 
-        inf>> NumbRotTimes;//   [3]  number of rotational time slices     
+        	inf>> NumbRotTimes;//   [3]  number of rotational time slices     
  
-        ROTATION = true;
+        	ROTATION = true;
 
-       _rtypes ++;
-     }
-     else
-     if (params==IO_ROTDENSI)
-     {
-        inf>>RotDenType;
-        inf>>RotOdEvn;
-        inf>>RotEoff;
-        inf>>X_Rot;
-        inf>>Y_Rot;
-        inf>>Z_Rot;
-        inf>>RNratio;
-     }
-     else
-     if (params==IO_WORM)
-     {
-        inf>>Worm.stype;      //     [1]
+       		_rtypes ++;
+     	}
+     	else
+     	if (params==IO_ROTDENSI)
+     	{
+        	inf>>RotDenType;
+        	inf>>RotOdEvn;
+        	inf>>RotEoff;
+        	inf>>X_Rot;
+        	inf>>Y_Rot;
+        	inf>>Z_Rot;
+        	inf>>RNratio;
+     	}
+     	else
+     	if (params==IO_WORM)
+     	{
+        	inf>>Worm.stype;      //     [1]
  
-        inf>>Worm.c;          //     [2] 
-        inf>>Worm.m;          //     [3]
+        	inf>>Worm.c;          //     [2] 
+        	inf>>Worm.m;          //     [3]
 
-        WORM = true;
+        	WORM = true;
 
-       _wtypes ++;
-     }
-     else 
-     if (params==IO_MINIMAGE)
-     {
-        MINIMAGE = true;
-     }
-     else
-     if (params==IO_READMCCOORDS)
-     {
-        InitMCCoords = 1;
-     }
-#ifdef MOLECULEINCAGE
-     else
-     if (params==IO_MOLECINCAGE)
-     {
-        MOLECINCAGE = 1;
-     }
-#endif
-     else 
-     if (params==IO_MCSKIP_RATIO)
-     {
-        inf >> MCSKIP_RATIO;
-     } 
-     else 
-     if (params==IO_MCSKIP_TOTAL)
-     {
-        inf >> MCSKIP_TOTAL;
-     } 
-     else 
-     if (params==IO_MCSKIP_AVERG)
-     {
-        inf >> MCSKIP_AVERG;
-     } 
-     else
-#ifdef GETR
-     if (params==IO_DISTANCE)
-     {
-        inf >> Distance;
-     } 
-     else
-#endif
-#ifdef BIPARTITION
-     if (params==IO_NUMBPARTICLE)
-     {
-        inf >> NumbParticle;
-     } 
-     else
-#endif
-     if (params==IO_DIPOLEMOMENT)
-     {
-        inf >> DipoleMoment;
-     } 
-     else
-     {}
+       		_wtypes ++;
+     	}
+     	else 
+     	if (params==IO_MINIMAGE)
+     	{
+        	MINIMAGE = true;
+     	}
+     	else
+     	if (params==IO_READMCCOORDS)
+     	{
+        	InitMCCoords = 1;
+     	}
+     	else 
+     	if (params==IO_MCSKIP_RATIO)
+     	{
+        	inf >> MCSKIP_RATIO;
+     	} 
+     	else 
+     	if (params==IO_MCSKIP_TOTAL)
+     	{
+        	inf >> MCSKIP_TOTAL;
+     	} 
+     	else 
+     	if (params==IO_MCSKIP_AVERG)
+     	{
+        	inf >> MCSKIP_AVERG;
+     	} 
+     	else
+     	if (params==IO_DISTANCE)
+     	{
+        	inf >> Distance;
+     	} 
+     	else
+     	if (params==IO_NUMBPARTICLE)
+     	{
+        	inf >> NumbParticle;
+     	} 
+     	else
+     	if (params==IO_DIPOLEMOMENT)
+     	{
+        	inf >> DipoleMoment;
+     	} 
+     	else
+     	{}
 
-     getline(inf,params,'\n');  // skip comments at the end of the line 
-   }
+     	getline(inf,params,'\n');  // skip comments at the end of the line 
+   	}
 
-   inf.close(); 
+   	inf.close(); 
 
 // POST READ INITIALIZATION
 
@@ -502,9 +482,7 @@ void IOReadParams(const char in_file[],int & mc_status)
    cout << "Number of steps to skip to save ACCEPT RATIO" << BLANK << MCSKIP_RATIO << endl;
    cout << "Number of steps to skip to save ACCUML AVERG" << BLANK << MCSKIP_TOTAL << endl;
    cout << "Number of steps to skip to evaluate AVERAGES" << BLANK << MCSKIP_AVERG << endl;
-#ifdef GETR
    cout << "Intermolecular distance" << BLANK << Distance << endl;
-#endif
    cout << "Dipole Moment " << BLANK << DipoleMoment << endl;
 
    cout << endl;
@@ -596,8 +574,8 @@ void ConfigIO(int tstatus, const char file_name[])
       nrerror (_proc_,IO_ERR_WMODE); break;      
    } 
 
-   fstream fid(file_name,mode);
-//   fstream fid(file_name,mode | ios::binary);
+   //fstream fid(file_name,mode);
+   fstream fid(file_name,mode | ios::binary);
 
    if (!fid.good())
    _io_error(_proc_,IO_ERR_FOPEN,file_name);
@@ -611,23 +589,69 @@ void ConfigIO(int tstatus, const char file_name[])
          size=sizeof(double)*NumbAtoms*NumbTimes;
          fid.write((char *)&size,sizeof(streamsize));
          fid.write((char *)MCCoords[0],size);
-         fid.write((char *)MCCosine[0],size);
-//       Toby replaces the above line by
-//       fid.write((char *)MCAngles[0],size);
-//       to store the three Euler angles
+         fid.write((char *)MCAngles[PHI],size);
+         fid.write((char *)MCCoords[1],size);
+         fid.write((char *)MCAngles[CTH],size);
+         fid.write((char *)MCCoords[2],size);
+         fid.write((char *)MCAngles[CHI],size);
          break;
       case IORead:
          fid.read((char *)&size,sizeof(streamsize));
          fid.read((char *)MCCoords[0],size);
-         fid.read((char *)MCCosine[0],size);
-//       Toby replaces the above line by
-//       fid.read((char *)MCAngles[0],size);
-//       to read the three Euler angles
+         fid.read((char *)MCAngles[PHI],size);
+         fid.read((char *)MCCoords[1],size);
+         fid.read((char *)MCAngles[CTH],size);
+         fid.read((char *)MCCoords[2],size);
+         fid.read((char *)MCAngles[CHI],size);
          break;
       default :  
          nrerror (_proc_,IO_ERR_WMODE);
          break;      
    } 
+  
+   fid.close();
+}
+
+void SeedIO(int tstatus, const char file_name[]) 
+// read/wrire initial seeds for omprng
+{
+   	const char *_proc_=__func__;    // "MCStatus()"; 
+
+   	int NSEED = 6;
+   	ios::openmode mode;
+
+   	switch (tstatus)
+   	{
+      	case IOWrite: mode = ios::out; break;
+      	case IORead : mode = ios::in;  break;
+      	default     :
+      	nrerror (_proc_,IO_ERR_WMODE); break;      
+   	} 
+
+   	//fstream fid(file_name,mode);
+   	fstream fid(file_name,mode | ios::binary);
+
+   	if (!fid.good())
+   	_io_error(_proc_,IO_ERR_FOPEN,file_name);
+
+   	io_setout(fid);  //added by Hui Li
+
+   	streamsize size;         
+   	switch (tstatus)
+   	{
+      	case IOWrite: 
+        	size=sizeof(double)*NSEED;
+         	fid.write((char *)&size,sizeof(streamsize));
+         	fid.write((char *)RngStream::nextSeed,size);
+         	break;
+      	case IORead:
+        	fid.read((char *)&size,sizeof(streamsize));
+       		fid.read((char *)RngStream::nextSeed,size);
+         	break;
+      	default :  
+         	nrerror (_proc_,IO_ERR_WMODE);
+         	break;      
+   	} 
   
    fid.close();
 }

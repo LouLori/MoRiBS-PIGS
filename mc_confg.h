@@ -30,6 +30,7 @@ const char BLANK[]    = "   ";      // spacing between columns
 
 const char FSTATUS[] = "yw001.stat"; // status of simulations
 const char FCONFIG[] = "yw001.conf"; // initial configurations
+const char FSEED[]   = "yw001.seed"; // initial configurations
 const char FTABLES[] = "yw001.tabl"; // permutation tables 
 const char FRANDOM[] = "yw001.rand"; // status of sprng streams 
 const char FQWORMS[] = "yw001.worm"; // status of the worm 

@@ -9,5 +9,5 @@ double rexp(RngStream* myRng, double theta);
 double rgamma(RngStream* myRng, double alpha, double beta);
 double rchisq(RngStream* myRng, int df);
 double rbeta(RngStream* myRng, double alpha, double beta);
-double gamma(double x);
+//double gamma(double x);
 

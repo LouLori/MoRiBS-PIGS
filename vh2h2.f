@@ -229,10 +229,10 @@ c     interpolated (r1, r2)-dependent coefficients.
 
 c --- this write statement is for debugging purposes.
 
-c     write (6, 6123) v(1), g000, v(1)*g000,
-c    +                v(2), g202, v(2)*g202,
-c    +                v(3), g022, v(3)*g022,
-c    +                v(4), g224, v(4)*g224, potl
+c      write (6, 6123) v(1), g000, v(1)*g000,
+c     +                v(2), g202, v(2)*g202,
+c     +                v(3), g022, v(3)*g022,
+c     +                v(4), g224, v(4)*g224, potl
 6123  format ('coefficients and angular functions:'/,
      +   'A000 = ', f12.7, ' g000 = ', f12.7, ' product = ', f12.7/,
      +   'A202 = ', f12.7, ' g202 = ', f12.7, ' product = ', f12.7/,

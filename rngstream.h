@@ -50,6 +50,7 @@ double RandU01 ();
 
 int RandInt (int i, int j);
 
+static double nextSeed[6];
 
 
 private:
@@ -63,7 +64,7 @@ bool anti, incPrec;
 std::string name;
 
 
-static double nextSeed[6];
+//static double nextSeed[6];
 
 
 double U01 ();

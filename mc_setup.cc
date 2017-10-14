@@ -40,13 +40,11 @@ int     NUMB_MOLCTYPES = 0;  // total number of molecules types
 int     NDIM;
 double  Temperature;
 
-#ifdef GETR
 double Distance;
-#endif
 double DipoleMoment;
-#ifdef BIPARTITION
+double DipoleMomentAU2;
+double RR;
 int NumbParticle;
-#endif
 
 double  Density;
 double  BoxSize;
@@ -114,13 +112,14 @@ int NThreads; // the number of threads as a global variable
 double ** MCCoords;   // translational degrees of freedom
 double ** MCCosine;   // orientational cosines
 double ** MCAngles;
-#ifdef LINEARROTORS
-double ** RCOMC60;
-#endif
-#ifdef MOLECULEINCAGE
-double ** MCCosinex; // orientational cosines for x axis
-double ** MCCosiney; // orientational cosines for y axis
-double ** RCOMC60;
+
+#ifdef PROPOSED
+double dcost;
+double dphi;
+int NPHI = 361;
+int NCOST = 101;
+double *costProposed;
+double *phiProposed;
 #endif
 
 //------------ Initial MCCoords and MCAngles;
@@ -131,15 +130,15 @@ double * MCAngInit;   // store the read in MCAngles
 //double ** TZMAT; // just a matrix
 
 double ** newcoords;  // buffer for new coordinates
+#ifdef PROPOSED
+double ** tempcoords;  // buffer for new coordinates
+#endif
 int    *  atom_list;  // buffer for atom labels
 
 double *  rhoprp;     // rotatinal propagator for non-linear rotor
 double *  erotpr;     // rotational energy estimator for non-linear rotor
 double *  erotsq;     // rotational energy square estimator for non-linear rotor
 
-#ifdef MOLECULEINCAGE
-int       MOLECINCAGE;  // integer flag for the molecule in a cage
-#endif
 int       InitMCCoords; // integer flag for read in MCCoords;
 
 //----------------------------------------------------------
@@ -161,15 +160,6 @@ void MCMemAlloc(void)  // allocate  memmory
   // MCCosine  = doubleMatrix (NDIM,NumbAtoms*NumbTimes);  
   MCCosine  = doubleMatrix (3,NumbAtoms*NumbTimes); 
   MCAngles  = doubleMatrix (3,NumbAtoms*NumbTimes); 
-#ifdef LINEARROTORS
-   RCOMC60 =    doubleMatrix (NumbAtoms,NDIM);
-#endif
-#ifdef MOLECULEINCAGE
-   MCCosinex  = doubleMatrix (3,NumbAtoms*NumbTimes);
-   MCCosiney  = doubleMatrix (3,NumbAtoms*NumbTimes);
-
-   RCOMC60 =    doubleMatrix (NumbAtoms,NDIM);
-#endif
 
   MCCooInit = new double [NDIM*NumbAtoms*NumbTimes];
   MCAngInit = new double [NDIM*NumbAtoms*NumbTimes];
@@ -184,6 +174,12 @@ void MCMemAlloc(void)  // allocate  memmory
   MCType    = new int [NumbAtoms];
   PIndex    = new int [NumbAtoms];
   RIndex    = new int [NumbAtoms];
+
+#ifdef PROPOSED
+  	tempcoords = doubleMatrix (NDIM,NumbAtoms*NumbTimes); 
+	costProposed = new double [NCOST*NPHI];
+	phiProposed  = new double [NCOST*NPHI];
+#endif
 }
 
 void MCMemFree(void)  //  free memory
@@ -191,21 +187,25 @@ void MCMemFree(void)  //  free memory
   free_doubleMatrix(MCCoords);  
   free_doubleMatrix(newcoords); 
 
+  free_doubleMatrix(MCCosine); 
+  free_doubleMatrix(MCAngles); 
+
   delete [] atom_list;
 
   delete [] rhoprp;
   delete [] erotpr;
+  delete [] erotsq;
 
-#ifdef MOLECULEINCAGE
-   free_doubleMatrix(MCCosinex);
-   free_doubleMatrix(MCCosiney);
+
+  delete [] MCType;
+  delete [] PIndex;
+  delete [] RIndex;
+
+#ifdef PROPOSED
+  	free_doubleMatrix(tempcoords); 
+	delete [] costProposed;
+	delete [] phiProposed;
 #endif
-  free_doubleMatrix(MCCosine); 
-  free_doubleMatrix(MCAngles); 
-
-  delete MCType;
-  delete PIndex;
-  delete RIndex;
 }
 
 //------------ MC SYSTEM OF UNITS --------------------------
@@ -372,26 +372,40 @@ void MCInit(void)  // only undimensional parameters in this function
   // BoxSize  =  pow((double)NumbAtoms/Density,1.0/(double)NDIM); 
   // define a box size based on number of atoms only (molecules excluded)
   
-  BoxSize  =  pow((double)(NUMB_ATOMS+NUMB_MOLCS)/Density,1.0/(double)NDIM);
+	BoxSize  =  pow((double)(NUMB_ATOMS+NUMB_MOLCS)/Density,1.0/(double)NDIM);
 
-  MCBeta   =  1.0/Temperature;
-#ifndef PIGSROTORS
-  MCTau    =  MCBeta/(double)NumbTimes;
-#else
-  MCTau    =  MCBeta/((double)NumbTimes-1.0);
+  	MCBeta   =  1.0/Temperature;
+#ifdef PIMCTYPE
+  	MCTau    =  MCBeta/(double)NumbTimes;
+#endif
+//
+#ifdef PIGSTYPE
+  	MCTau    =  MCBeta/((double)NumbTimes-1.0);
+#endif
+//
+#ifdef PIGSENTTYPE
+  	MCTau    =  MCBeta/((double)NumbTimes-1.0);
 #endif
 
-  if (ROTATION)
-#ifndef PIGSROTORS
-    MCRotTau =  MCBeta/(double)NumbRotTimes;
-#else
-    MCRotTau =  MCBeta/((double)NumbRotTimes-1.0);
+  	if (ROTATION)
+	{
+#ifdef PIMCTYPE
+    	MCRotTau =  MCBeta/(double)NumbRotTimes;
 #endif
+//
+#ifdef PIGSTYPE
+    	MCRotTau =  MCBeta/((double)NumbRotTimes-1.0);
+#endif
+//
+#ifdef PIGSENTTYPE
+    	MCRotTau =  MCBeta/((double)NumbRotTimes-1.0);
+#endif
+	}
 
   RotRatio  = 1;  // div_t quot - it's important for the area estimator
   // even without rotations
 
-  if (ROTATION)
+  	if (ROTATION)
     {
       RotRatio = NumbTimes / NumbRotTimes;  // div_t quot
       int rt   = NumbTimes % NumbRotTimes;  // div_t rem
@@ -494,24 +508,12 @@ void MCConfigInit(void)
 		MCAngles[CHI][it] = 0.0;
 
 		double phi  = MCAngles[PHI][it];
-#ifdef MOLECULEINCAGE
-       double chi  = MCAngles[CHI][it];
-#endif      
 		double cost = MCAngles[CTH][it];
 		double sint = sqrt(1.0 - cost*cost);
   
 		MCCosine[AXIS_X][it] = sint*cos(phi);
 		MCCosine[AXIS_Y][it] = sint*sin(phi);
 		MCCosine[AXIS_Z][it] = cost;
-#ifdef MOLECULEINCAGE
-       MCCosinex[AXIS_X][it] = cost*cos(phi)*cos(chi)-sin(phi)*sin(chi);
-       MCCosinex[AXIS_Y][it] = cost*sin(phi)*cos(chi)+cos(phi)*sin(chi);
-       MCCosinex[AXIS_Z][it] = -sint*cos(chi);
-
-       MCCosiney[AXIS_X][it] = -cost*cos(phi)*sin(chi)-sin(phi)*cos(chi);
-       MCCosiney[AXIS_Y][it] = -cost*sin(phi)*sin(chi)+cos(phi)*cos(chi);
-       MCCosiney[AXIS_Z][it] = sint*sin(chi);
-#endif
 	}
 }
 
@@ -641,7 +643,7 @@ void initChain_config(double **pos)
     }
 
 	int NumbAtoms1;
-#ifdef ENTANGLEMENT
+#ifdef PIGSENTTYPE
     NumbAtoms1 = NumbAtoms/2;
 #else
 	NumbAtoms1 = NumbAtoms;
@@ -664,7 +666,7 @@ void initChain_config(double **pos)
 		shift[1] += Distance*sin(LatticeTheta)*sin(LatticePhi);
 		shift[2] += Distance*cos(LatticeTheta);
     }
-#ifdef ENTANGLEMENT
+#ifdef PIGSENTTYPE
     for (int id = 0; id < NDIM; id++)
     {
 	    shift[id] = 0.0;
@@ -703,4 +705,27 @@ void initChain_config(double **pos)
 		shift[2] -= Distance*cos(LatticeTheta);
     }
 #endif
+}
+
+#ifdef PROPOSED
+void proposedGrid(void)
+{
+    dcost = 2.0/((double)NCOST - 1.0); 
+    dphi  = 2.0*M_PI/((double)NPHI - 1.0);
+    for (int ict = 0; ict < NCOST; ict++)
+	{
+ 		for (int ip = 0; ip < NPHI; ip++)
+		{
+			int ii = ip + ict*NPHI;
+        	costProposed[ii] = -1.0+ict*dcost;
+			phiProposed[ii] = ip*dphi;
+		}
+	}
+}
+#endif
+void ParamsPotential(void)
+{
+	double DipoleMomentAU   = DipoleMoment/AuToDebye;
+	DipoleMomentAU2  = DipoleMomentAU*DipoleMomentAU;
+	RR   = Distance/BOHRRADIUS;
 }

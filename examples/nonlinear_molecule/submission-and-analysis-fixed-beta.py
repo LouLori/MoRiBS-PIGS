@@ -17,37 +17,41 @@ import support
 #===============================================================================
 variableName        = "tau"
 #
-TransMove           = "No"
+TransMove           = "Yes"
 RotMove             = "Yes"
 #
 status              = "submission"                                            
-status              = "analysis"                                            
+#status              = "analysis"                                            
 #
 NameOfServer        = "nlogn"
 #NameOfServer        = "graham"
-NameOfPartition     = "tapas"
+NameOfPartition     = "ntapas"
 #
-#TypeCal             = "PIMC"
-#TypeCal             = "PIGS"
-TypeCal             = "ENT"
+TypeCal             = 'PIMC'
+#TypeCal             = 'PIGS'
+#TypeCal             = 'ENT'
 #
-#molecule            = "HFC60"                                                  
-molecule            = "HF"                                                      
-#molecule            = "H2"                                                    
-molecule_rot        = "HF"
+atom                = "H2"
+atom_numb           = 1
+atom_stat           = "BOSE"
+atom_step_trans     = [0.2, 0.2]
+atom_level          = [3, 3]
 #
-#print 5/(support.bconstant(molecule_rot)/0.695)
-#print 7/(support.bconstant(molecule_rot)/0.695)
-#exit()
+molecule            = "H2O"
+molecule_numb       = 1
+molecule_stat       = "BOLTZMANN"
+molecule_step_trans = [0.2, 0.2]
+molecule_level      = [4, 4]
 #
-numbblocks	        = 10000
-numbmolecules       = 2
-numbpass            = 100
+molecule_rot        = "H2O"
+#
+numbblocks	        = 1000
+numbpass            = 200
 #
 Rpt                 = 10.05
 dipolemoment        = 0.45        #J. Chern. Phys. 73(5), 2319 (1980).
 
-status_rhomat       = "Yes"                                                 
+status_rhomat       = "No"                                                 
 status_cagepot      = "No"                                                      
 #RUNDIR              = "work"
 RUNDIR              = "scratch"
@@ -55,7 +59,7 @@ RUNIN               = "nCPU"
 
 loopStart           = 40
 loopEnd             = 102
-skip                = 10
+skip                = 5
 
 preskip             = 0
 postskip            = 0
@@ -78,22 +82,17 @@ if (variableName == "tau"):
 #==================================== MCStep ===================================# 
 	if (molecule_rot == "H2"):
 		step_trans  = [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.10,1.20,1.30,1.40,1.50]
-		#step       = [1.5,3.0,3.0,3.0,3.0,2.6,2.3,2.5,2.02] #temp 10K             #change param6
-		#step       = [1.5,3.0,3.0,2.5,1.5,1.0,0.7,2.5,2.02] #temp 50K             #change param6
 		step        = [1.5,3.0,3.0,2.0,1.0,0.7,0.5,2.5,2.02] #temp 100K            #change param6
 		level       = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 
 	if (molecule_rot == "HF"):
 		step_trans  = [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.10,1.20,1.30,1.40,1.50,1.6,1.7,1.8,1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0,3.1,3.2,3.3]
-		#step       = [2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,1.8,1.8,1.8,1.6,1.6,1.6,1.6,1.4,1.4,1.8,1.7,1.6,1.5,1.5,1.4,1.4,1.4,1.4,1.4,1.4,1.4,1.4]  
-		#step       = [2.0,2.0,2.0,1.8,1.8,1.8,1.6,1.6,1.6,1.6,1.4,1.4,1.8,1.7,1.6,1.5,1.5,1.4,1.4,1.4,1.4,1.4,1.4,1.4,1.4]  # beads 41 to 61
 		step        = [1.7,1.6,1.6,1.6,1.5,1.4,1.4,1.3,1.3,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.1,1.1,1.0,1.0,1.0,0.9,0.9]  # beads 21 to 51 beta 0.1
-		step        = [1.7,1.6,1.5,1.4,1.3,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.1,1.1,1.0,1.0,1.0,0.9,0.9]  # beads 21 to 51 beta 0.1
-		#step        = [1.0,0.9,0.8,0.7,0.7]  # beads 61, 71, 81, 91, 101 HF
-		#step        = [0.9, 0.9]  # beads 101 HF
-					# 2 HF beta 0.1 K-1 #change param6 for 10.05 Angstrom and Dipole Moment 1.86 Debye PIGS
-		#step       = [0.7, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.5, 1.5, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.0, 1.0, 1.0, 1.0, 1.0]  
-					# 2 HF beta 0.2 K-1 #change param6 for 10 Angstrom PIMC
+		level       = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+
+	if (molecule_rot == "H2O"):
+		step_trans  = [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.10,1.20,1.30,1.40,1.50,1.6,1.7,1.8,1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0,3.1,3.2,3.3]
+		step        = [1.7,1.6,1.6,1.6,1.5,1.4,1.4,1.3,1.3,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.1,1.1,1.0,1.0,1.0,0.9,0.9]  # beads 21 to 51 beta 0.1
 		level       = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 
 if (variableName == "beta"):
@@ -116,17 +115,17 @@ file1_name = support.GetFileNameSubmission(TypeCal, molecule_rot, TransMove, Rot
 if status   == "submission":
 
 	if (RUNDIR == "scratch") or (NameOfServer == "graham"):
-		dir_run_job = "/scratch/tapas/linear_rotors/" 
+		dir_run_job = "/scratch/tapas/nonlinear-molecule/" 
 	else:	
-		dir_run_job     = "/work/tapas/linear_rotors/"
+		dir_run_job     = "/work/tapas/nonlinear-molecule/"
 
 	execution_file      = "/home/tapas/Moribs-pigs/MoRiBS-PIMC/pimc"     
 	support.makeexecutionfile(src_dir,TypeCal)
 
 if (NameOfServer == "graham"):
-	dir_output      = "/scratch/tapas/linear_rotors/"     
+	dir_output      = "/scratch/tapas/nonlinear-molecule/"     
 else:
-	dir_output      = "/work/tapas/linear_rotors/"             
+	dir_output      = "/work/tapas/nonlinear-molecule/"             
 
 #===============================================================================
 #                                                                              |
@@ -136,9 +135,9 @@ else:
 #===============================================================================
 if status == "submission":
 	if (NameOfServer == "graham"):
-		dir_run_input_pimc = "/scratch/tapas/linear_rotors/"+file1_name+"PIMC"
+		dir_run_input_pimc = "/scratch/tapas/nonlinear-molecule/"+file1_name+"PIMC"
 	else:
-		dir_run_input_pimc = "/work/tapas/linear_rotors/"+file1_name+"PIMC"
+		dir_run_input_pimc = "/work/tapas/nonlinear-molecule/"+file1_name+"PIMC"
 	if (os.path.isdir(dir_run_input_pimc) == False):
 		call(["rm", "-rf",  dir_run_input_pimc])
 		call(["mkdir", "-p", dir_run_input_pimc])
@@ -156,16 +155,6 @@ if status == "analysis":
 	if (TypeCal == "ENT"):
 		fanalyzeEntropy      = open(FileAnalysis.SaveEntropy, "a")
 		fanalyzeEntropy.write(support.fmtAverageEntropy(status,variableName,ENT_TYPE))
-		fanalyzeEnergy       = open(FileAnalysis.SaveEnergy, "a")           
-		fanalyzeEnergy.write(support.fmtAverageEnergy(TypeCal,status,variableName))
-		fanalyzeCorr         = open(FileAnalysis.SaveCorr, "a")           
-		fanalyzeCorr.write(support.fmtAverageOrientation(status,variableName))
-		fanalyzeTotalCorr    = open(FileAnalysis.SaveTotalCorr, "a")           
-		fanalyzeXCorr        = open(FileAnalysis.SaveXCorr, "a")           
-		fanalyzeYCorr        = open(FileAnalysis.SaveYCorr, "a")           
-		fanalyzeZCorr        = open(FileAnalysis.SaveZCorr, "a")           
-		fanalyzeXYCorr       = open(FileAnalysis.SaveXYCorr,"a")           
-
 	if ((TypeCal == "PIMC") or (TypeCal == "PIGS")):
 		fanalyzeEnergy       = open(FileAnalysis.SaveEnergy, "a")           
 		fanalyzeEnergy.write(support.fmtAverageEnergy(TypeCal,status,variableName))
@@ -175,7 +164,7 @@ if status == "analysis":
 		fanalyzeXCorr        = open(FileAnalysis.SaveXCorr, "a")           
 		fanalyzeYCorr        = open(FileAnalysis.SaveYCorr, "a")           
 		fanalyzeZCorr        = open(FileAnalysis.SaveZCorr, "a")           
-		fanalyzeXYCorr       = open(FileAnalysis.SaveXYCorr,"a")           
+		fanalyzeXYCorr       = open(FileAnalysis.SaveXYCorr, "a")           
 
 if (TypeCal == "ENT"):
 	numbmolecules  *= 2
@@ -186,10 +175,7 @@ if (TypeCal == "ENT"):
 
 # Loop over jobs
 if (variableName == "beta"):
-	if (TypeCal == "ENT"):
-		list_nb = [4,10,14,20,24,30,34,40]
-	else:
-		list_nb = [2,4,10,14,20,24,30,34,40]
+	list_nb = [2,4,10,14,20,24,30,34,40]
 if (variableName == "tau"):
 	list_nb  = [i for i in range(loopStart, loopEnd, skip)]
 
@@ -221,13 +207,16 @@ for i in list_nb:
 
 			final_dir_in_work = dir_output+folder_run
 			try:
-				fanalyzeEnergy.write(support.GetAverageEnergy(TypeCal,numbbeads,variable,final_dir_in_work,preskip,postskip))
-				fanalyzeCorr.write(GetAverageOrientation(support.numbbeads,variable,final_dir_in_work,preskip,postskip))
-				fanalyzeTotalCorr.write(support.GetAverageCorrelation("TotalCorr", numbmolecules,numbbeads,variable,final_dir_in_work,preskip,postskip))
-				fanalyzeXCorr.write(support.GetAverageCorrelation("XCorr", numbmolecules,numbbeads,variable,final_dir_in_work,preskip,postskip))
-				fanalyzeYCorr.write(support.GetAverageCorrelation("YCorr", numbmolecules,numbbeads,variable,final_dir_in_work,preskip,postskip))
-				fanalyzeZCorr.write(support.GetAverageCorrelation("ZCorr", numbmolecules,numbbeads,variable,final_dir_in_work,preskip,postskip))
-				fanalyzeXYCorr.write(support.GetAverageCorrelation("XYCorr", numbmolecules,numbbeads,variable,final_dir_in_work,preskip,postskip))
+				if (TypeCal == "ENT"):
+					fanalyzeEntropy.write(support.GetAverageEntropy(numbbeads,variable,final_dir_in_work,preskip,postskip,ENT_TYPE))
+				else:
+					fanalyzeEnergy.write(support.GetAverageEnergy(TypeCal,numbbeads,variable,final_dir_in_work,preskip,postskip))
+					fanalyzeCorr.write(GetAverageOrientation(support.numbbeads,variable,final_dir_in_work,preskip,postskip))
+					fanalyzeTotalCorr.write(support.GetAverageCorrelation("TotalCorr", numbmolecules,numbbeads,variable,final_dir_in_work,preskip,postskip))
+					fanalyzeXCorr.write(support.GetAverageCorrelation("XCorr", numbmolecules,numbbeads,variable,final_dir_in_work,preskip,postskip))
+					fanalyzeYCorr.write(support.GetAverageCorrelation("YCorr", numbmolecules,numbbeads,variable,final_dir_in_work,preskip,postskip))
+					fanalyzeZCorr.write(support.GetAverageCorrelation("ZCorr", numbmolecules,numbbeads,variable,final_dir_in_work,preskip,postskip))
+					fanalyzeXYCorr.write(support.GetAverageCorrelation("XYCorr", numbmolecules,numbbeads,variable,final_dir_in_work,preskip,postskip))
 			except:
 				pass
 	else:
@@ -257,13 +246,6 @@ for i in list_nb:
 			try:
 				if (TypeCal == "ENT"):
 					fanalyzeEntropy.write(support.GetAverageEntropy(numbbeads,variable,final_dir_in_work,preskip,postskip,ENT_TYPE))
-					fanalyzeEnergy.write(support.GetAverageEnergy(TypeCal,numbbeads,variable,final_dir_in_work,preskip,postskip))
-					fanalyzeCorr.write(support.GetAverageOrientation(numbbeads,variable,final_dir_in_work,preskip,postskip))
-					fanalyzeTotalCorr.write(support.GetAverageCorrelation("TotalCorr", numbmolecules/2,numbbeads,variable,final_dir_in_work,preskip,postskip))
-					fanalyzeXCorr.write(support.GetAverageCorrelation("XCorr", numbmolecules/2,numbbeads,variable,final_dir_in_work,preskip,postskip))
-					fanalyzeYCorr.write(support.GetAverageCorrelation("YCorr", numbmolecules/2,numbbeads,variable,final_dir_in_work,preskip,postskip))
-					fanalyzeZCorr.write(support.GetAverageCorrelation("ZCorr", numbmolecules/2,numbbeads,variable,final_dir_in_work,preskip,postskip))
-					fanalyzeXYCorr.write(support.GetAverageCorrelation("XYCorr", numbmolecules/2,numbbeads,variable,final_dir_in_work,preskip,postskip))
 				else:
 					fanalyzeEnergy.write(support.GetAverageEnergy(TypeCal,numbbeads,variable,final_dir_in_work,preskip,postskip))
 					fanalyzeCorr.write(support.GetAverageOrientation(numbbeads,variable,final_dir_in_work,preskip,postskip))
@@ -279,34 +261,11 @@ for i in list_nb:
 if status == "analysis":
 	if (TypeCal == "ENT"):
 		fanalyzeEntropy.close()
-		fanalyzeEnergy.close()
-		fanalyzeCorr.close()
-		fanalyzeTotalCorr.close()
-		fanalyzeXCorr.close()
-		fanalyzeYCorr.close()
-		fanalyzeZCorr.close()
-		fanalyzeXYCorr.close()
 		call(["cat",FileAnalysis.SaveEntropy])
-		print("")
-		print("")
-		call(["cat",FileAnalysis.SaveEnergy])
 #=========================File Checking===============================#
+		SavedFile = FileAnalysis.SaveEntropy
+		support.FileCheck(TypeCal,list_nb,variableName,SavedFile)
 		try:
-			SavedFile = FileAnalysis.SaveEntropy
-			support.FileCheck(TypeCal,list_nb,variableName,SavedFile)
-			SavedFile = FileAnalysis.SaveEnergy
-			support.FileCheck(TypeCal,list_nb,variableName,SavedFile)
-			SavedFile = FileAnalysis.SaveCorr
-			support.FileCheck(TypeCal,list_nb,variableName,SavedFile)
-			SavedFile = FileAnalysis.SaveTotalCorr
-			support.FileCheck(TypeCal,list_nb,variableName,SavedFile)
-			SavedFile = FileAnalysis.SaveXCorr
-			support.FileCheck(TypeCal,list_nb,variableName,SavedFile)
-			SavedFile = FileAnalysis.SaveYCorr
-			support.FileCheck(TypeCal,list_nb,variableName,SavedFile)
-			SavedFile = FileAnalysis.SaveZCorr
-			support.FileCheck(TypeCal,list_nb,variableName,SavedFile)
-			SavedFile = FileAnalysis.SaveXYCorr
 			support.FileCheck(TypeCal,list_nb,variableName,SavedFile)
 		except:
 			pass
@@ -320,6 +279,9 @@ if status == "analysis":
 		fanalyzeZCorr.close()
 		fanalyzeXYCorr.close()
 		call(["cat",FileAnalysis.SaveEnergy])
+		print("")
+		print("")
+		#call(["cat",FileAnalysis.SaveAngDOFS])
 #=========================File Checking===============================#
 		try:
 			SavedFile = FileAnalysis.SaveEnergy
@@ -346,8 +308,8 @@ if status == "analysis":
 ##================================================================================#
 #
 		'''
-		filetobemv = "/work/tapas/linear_rotors/"+file1_name+str(numbbeads)
-		filemv = "/work/tapas/linear_rotors/"+file1_name1+str(numbbeads)
+		filetobemv = "/work/tapas/nonlinear-molecule/"+file1_name+str(numbbeads)
+		filemv = "/work/tapas/nonlinear-molecule/"+file1_name1+str(numbbeads)
 		print(filetobemv)
 		print(filemv)
 		call(["mv", filetobemv, filemv])

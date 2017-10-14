@@ -6,14 +6,18 @@
 #include <stdlib.h>
 
 //------------ memory allocation ----------------
-
 double **doubleMatrix(long row, long col)
 // based on nrutils.c dmatrix 
 {
    double **mat_;
 
-   mat_    = new double*[row];
-   mat_[0] = new double [row*col]; 
+   if (row >= 1) {
+       mat_ = new double*[row];
+   } else {
+       // free_doubleMatrix requires at least one element
+       mat_ = new double*[1];
+   }
+   mat_[0] = new double [row*col];
 
    assert(mat_    != NULL);
    assert(mat_[0] != NULL);
@@ -29,8 +33,13 @@ int **intMatrix(long row, long col)
 {
    int **mat_;
 
-   mat_    = new int*[row];
-   mat_[0] = new int [row*col]; 
+   if (row >= 1) {
+       mat_ = new int*[row];
+   } else {
+       // free_intMatrix requires at least one element
+       mat_ = new int*[1];
+   }
+   mat_[0] = new int [row*col];
 
    assert(mat_    != NULL);
    assert(mat_[0] != NULL);
@@ -47,8 +56,13 @@ long int **long_intMatrix(long row, long col)
 {
    long int **mat_;
 
-   mat_    = new long int*[row];
-   mat_[0] = new long int [row*col]; 
+   if (row >= 1) {
+       mat_ = new long int*[row];
+   } else {
+       // free_long_intMatrix requires at least one element
+       mat_ = new long int*[1];
+   }
+   mat_[0] = new long int [row*col];
 
    assert(mat_    != NULL);
    assert(mat_[0] != NULL);

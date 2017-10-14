@@ -1,4 +1,64 @@
-      subroutine enhfc60(R,EulangL1,Eulang2,EulangJ1,EulangJ2,EHFC60)
+      program cagepotential
+      integer i1,i2,j1,j2,i0, ncost,nphi, ncost1,nphi1
+      double precision EulangJ(2),EulangL(2),EHFC60,R,Pi,Unitc
+      parameter (Pi=3.14159265358979323846d+00)
+      parameter (unitc = 503.2197039379154d+00) ! Kcal/Mol to Kelvin
+      character argum*30
+      call getarg(1,argum)
+      read(argum,*)ncost
+      call getarg(2,argum)
+      read(argum,*)nphi
+
+       R=0.d0;
+       EulangL(1)=0.0d0
+       EulangL(2)=0.0d0
+
+       dcost = 2.0/float(ncost)
+       dphi  = 2.0*Pi/float(nphi)
+
+       EulangJ(2)=0.d0
+       ncost1 = ncost + 1
+       nphi1 = nphi + 1
+
+       open(7,file='cagepot.out',status='unknown')
+       write(7,*)ncost1,nphi1
+       write(7,'(1p,7(1x,E15.8))')dcost,dphi
+
+       do i2 = 1, ncost1
+         EulangJ(1) = -1.0d0 + (i2-1)*dcost
+         write(7,'(1p,7(1x,E15.8))') EulangJ(1)
+       enddo
+
+       do j2 = 1, nphi1
+         EulangJ(2) = 0.0d0 + (j2-1)*dphi
+         write(7,'(1p,7(1x,E15.8))') EulangJ(2)
+       enddo
+
+       do i2=1,ncost1
+         do j2=1,nphi1
+
+!minimum:    0.1100  148.3000  180.0000   31.7000    0.0000       -6.92393606
+!            0.1100   90.0000  180.0000   90.0000    0.0000       -6.92393608
+ 
+
+           EulangJ(1) = -1.0d0 + (i2-1)*dcost
+           EulangJ(2) = 0.0d0  + (j2-1)*dphi
+      
+           call enHFC60(R,EulangL,EulangJ,EHFC60)
+           write(7,'(1p,7(1x,E15.8))') EHFC60*unitc
+
+         enddo
+       enddo
+       close(7,status='keep')
+
+   70  format(5F10.4,1F18.8)
+
+       stop
+       end program 
+
+
+
+      subroutine enHFC60(R,EulangL,EulangJ,EHFC60)
 c
 c     input: coordinates of the center of mass of HF molecule are defined by 
 c            R, AngleL(1)=th, AngleL(2)=ph; rotation of HF in the centre of mass
@@ -9,15 +69,14 @@ c     This potential is based on the DF-LMP2/cc-pVTZ Counterpoise calculations
 
       integer i,j,k,n,p1,p2,p,mp
       parameter(n=12,kcal2k = 503.219565d0)
-      double precision EulangL1, EulangL2, EulangJ1, EulangJ2,EHFC60
-      double precision x(n),t,R,R2,R3,R4
-      double precision th,thp,ph,php 
+      double precision EulangL(2),EulangJ(2),EHFC60,x(n),t,R,R2,R3,R4
+      double precision cost, costp, ph, php 
       dimension p1(n),p2(n),p(n),mp(n)
  
-      th=EulangL1
-      ph=EulangL2
-      thp=EulangJ1
-      php=EulangJ2
+      cost=EulangL(1)
+      ph=EulangL(2)
+      costp=EulangJ(1)
+      php=EulangJ(2)
 
          	p1(1)=0    
          	p1(2)=0    
@@ -97,17 +156,17 @@ c     This potential is based on the DF-LMP2/cc-pVTZ Counterpoise calculations
 
        EHFC60=0.d0
        do i=1,n
-       EHFC60=EHFC60+x(i)*t(p1(i),p2(i),p(i),mp(i),th,ph,thp,php)
+       EHFC60=EHFC60+x(i)*t(p1(i),p2(i),p(i),mp(i),cost,ph,costp,php)
        enddo
        
       end
 
-      function t(p1,p2,p,mp,th,ph,thp,php)
+      function t(p1,p2,p,mp,cost,ph,costp,php)
       implicit none
       integer p1,q1,p2,p,mp,r1,r2,r
-      real*8 t,th,ph,thp,php,PLMx,
+      real*8 t,cost,ph,costp,php,PLMx,
      $     xp1,xp2,xp,xr1,xr2,xr,thrj,pi
-      parameter (Pi=3.14159265358979324d0)
+      parameter (Pi=3.14159265358979323846d+00)
 
       t=0
       do r1=-p1,p1
@@ -125,9 +184,9 @@ c     This potential is based on the DF-LMP2/cc-pVTZ Counterpoise calculations
 
 
             t = t + thrj(xp1,xp2,xp,xr1,xr2,-xr)
-     $           * PLMx(p2,r2,cos(thp*Pi/180.0d0))
-     $           * PLMx(p1,r1,cos(th*Pi/180.0d0))
-     $           *(cos((r2*php+r1*ph)*Pi/180.0d0))
+     $           * PLMx(p2,r2,costp)
+     $           * PLMx(p1,r1,cost)
+     $           *cos(r2*php+r1*ph)
      $           *sqrt((2.d0*xp1+1.d0)*(2.d0*xp2+1.d0))
      $           *(-1.d0)**(xp1-xp2+xr)*(sqrt(2.d0*xp+1.d0))*2.
 

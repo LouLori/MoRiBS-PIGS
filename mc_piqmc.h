@@ -3,17 +3,20 @@
 
 void MCMolecularMove(int);
 void MCBisectionMove(int,int);
+void MCBisectionMovePIGS(int,int);
 void MCRotationsMove(int);
-#ifdef SWAPTOUNSWAP
-void MCSwap(double, string &);
+void MCRotLinStep(int,int,int,int,double,double,double,double,double &,double &);
+void MCRotLinStepPIMC(int,int,int,int,double,double,double,double,double &,double &);
+void MCRotLinStepPIGS(int,int,int,int,double,double,double,double,double &,double &);
 void MCRotLinStepSwap(int,int,int,int,double,double,double,double,double &,double &, string);
+void MCSwap(double, string &);
+double PotRotEnergyPIMC(int, double *,int it);   
+double PotRotEnergyPIGS(int, double *,int it);   
 double PotRotEnergySwap(int,const double *,int it, string);   
 //double PotRotEnergySwap(int,double **,int it, int );   
-#endif
 // Toby adds rotation move for nonlinear rotor
 void MCRotations3D(int);
 void MCRot3Dstep(int, int, int, int, double,double,double,double,double,int, int, double &, double &);
-void MCRotLinStep(int,int,int,int,double,double,double,double,double &,double &);
 void Reflect_MF_XZ(void);
 void Reflect_MF_YZ(void);
 void Reflect_MF_XY(void);
@@ -26,11 +29,8 @@ double PotEnergy(int,double **);
 double PotEnergy(int,double **,int);
 
 double PotRotEnergy(int,double **,int it);   
-double PotRotEnergy(int, double *,int it);   
 double PotRotE3D(int,double *,int it);   
-#ifdef LINEARROTORS
 double PotRotE3DHF(int,double **,int it);   
-#endif
 
 extern double  **MCTotal;  // MC counters (total number of moves)
 extern double  **MCAccep;  // MC counters (number of accepted moves)
@@ -53,4 +53,6 @@ extern int PrintZrfl; // integer flag for printing reflected coordinates
 //Last two lines added by Tapas Sahoo
 double DotProduct(double *, double *); 
 void CrossProduct(double *, double *, double *);
+int myRand(double *, double );
+int findCeil(double *, double);
 #endif  //mc_pimc.h
