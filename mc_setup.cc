@@ -2,6 +2,10 @@
 #include "mc_utils.h"
 #include "mc_confg.h"
 #include "mc_const.h"
+#include "rngstream.h"
+#include "omprng.h"
+#include <cstdlib>
+#include <omp.h>
 
 #include <math.h>
 
@@ -141,6 +145,13 @@ double *  erotsq;     // rotational energy square estimator for non-linear rotor
 
 int       InitMCCoords; // integer flag for read in MCCoords;
 
+#ifdef GAUSSIANMOVE
+double ** gausscoords;
+int size_Gauss;
+double * AMat;
+double * Eigen;
+#endif
+
 //----------------------------------------------------------
 #ifdef CHAINCONFIG
 void initChain_config(double **);
@@ -180,6 +191,11 @@ void MCMemAlloc(void)  // allocate  memmory
 	costProposed = new double [NCOST*NPHI];
 	phiProposed  = new double [NCOST*NPHI];
 #endif
+#ifdef GAUSSIANMOVE
+  	gausscoords = doubleMatrix (NDIM,NumbAtoms*NumbTimes); 
+	AMat    = new double [NumbTimes*NumbTimes];
+	Eigen   = new double [NumbTimes];
+#endif
 }
 
 void MCMemFree(void)  //  free memory
@@ -205,6 +221,11 @@ void MCMemFree(void)  //  free memory
   	free_doubleMatrix(tempcoords); 
 	delete [] costProposed;
 	delete [] phiProposed;
+#endif
+#ifdef GAUSSIANMOVE
+  	free_doubleMatrix(gausscoords); 
+	delete [] AMat;
+	delete [] Eigen;
 #endif
 }
 
@@ -729,3 +750,169 @@ void ParamsPotential(void)
 	DipoleMomentAU2  = DipoleMomentAU*DipoleMomentAU;
 	RR   = Distance/BOHRRADIUS;
 }
+
+//Tapas implemented the below section//
+#ifdef GAUSSIANMOVE
+void ProposedMCCoords()
+{
+	int atype = 0;
+#ifdef IOWRITE
+	double FrequencyHO     = 78.6; //in cm-1
+
+	double FrequencyANGINV = FrequencyHO*pow(10,-8);
+	double massCMINV       = MCAtom[atype].mass*AuToCmInverse/1822.88848325;
+	double massANGINV      = massCMINV*pow(10,-8);
+	double FrequencyK      = FrequencyHO*CMRECIP2KL; //in Kelvin
+
+    double prefacGauss1    = massANGINV*FrequencyANGINV;
+    double prefacGauss2    = 2.0*sinh(FrequencyK*MCTau);
+    double prefacGauss3    = cosh(FrequencyK*MCTau);
+#endif
+	double FrequencyK      = 1.0*AuToKelvin;
+    double prefacGauss1    = 1.0; // in Atomic Unit;
+    double prefacGauss2    = 2.0*tanh(FrequencyK*MCTau);
+    double prefacGauss3    = 2.0*sinh(FrequencyK*MCTau);
+
+    double afacGauss       = prefacGauss1/prefacGauss2;
+    double bfacGauss       = -prefacGauss1/prefacGauss3;
+	cout<<"afacGauss = "<<afacGauss<<" bfacGauss = "<<bfacGauss<<endl;
+	
+//Tridiagonal Matrix formation; starts
+
+	int it0, it1, ii0, iip1, iim1;
+
+	for (it0 = 0; it0 < NumbTimes; it0++)
+	{
+		for (it1 = 0; it1 < NumbTimes; it1++)
+		{
+			ii0 = it1 + it0*NumbTimes;
+			AMat[ii0] = 0.0;
+		}
+	}
+
+	for (it0 = 0; it0 < NumbTimes; it0++)
+	{
+		for (it1 = 0; it1 < NumbTimes; it1++)
+		{
+			if (it1 == it0)
+			{
+				ii0  = it1 + it0*NumbTimes;
+				iip1 = (it1+1) + it0*NumbTimes;
+				iim1 = (it1-1) + it0*NumbTimes;
+				if ((it1+1) < NumbTimes)
+   				{
+					AMat[iip1]      = bfacGauss;
+   				}
+				if ((it1 == 0) || (it1 == (NumbTimes-1)))
+				{
+					AMat[ii0]       = afacGauss;
+				}
+				else
+				{
+					AMat[ii0]       = 2.0*afacGauss;
+				}
+   				if ((it1-1) >= 0)
+   				{
+					AMat[iim1] 		= bfacGauss;
+   				}
+			}
+		}
+	}
+	for (it0 = 0; it0 < NumbTimes; it0++)
+	{
+		for (it1 = 0; it1 < NumbTimes; it1++)
+		{
+			int ii0 = it1 + it0*NumbTimes;
+			cout<< AMat[ii0]<<"  ";
+		}
+		cout<<endl;
+	}
+	for (it0 = 0; it0 < NumbTimes; it0++)
+	{
+		Eigen[it0] = 0.0;
+	}
+	diag(AMat, Eigen, NumbTimes);
+	for (it0 = 0; it0 < NumbTimes; it0++)
+    {
+      	cout<<Eigen[it0]<<"   ";
+    }
+}
+
+void GetRandomCoords()
+{
+	int atom0, it0, it1, id0, ii0, t0;
+
+	double sum;
+
+	//RngStream Rng[1];
+   	RngStream Rng[omp_get_num_procs()];     // initialize a parallel RNG named "Rng"
+	double mu =0.0;
+	double sigma;
+
+	//double * ygauss;
+	double ygauss[NumbTimes];
+
+	for (atom0 = 0; atom0 < NumbAtoms; atom0++)
+	{
+		for (id0 = 0; id0 < NDIM; id0++)
+		{
+			for (it0 = 0; it0 < NumbTimes; it0++)
+			{
+				sum = 0.0;
+				//ygauss  = new double [NumbTimes];
+   				for (it1 = 0; it1 < NumbTimes; it1++)
+   				{
+					if (Eigen[it1] < 0.0) 
+					{
+						cout << "Eigen values must be positive"<<endl;
+						exit(0);
+					}
+					sigma = sqrt(1.0/(2.0*Eigen[it1]));
+					ygauss[it1] = rnorm(Rng, mu, sigma);
+
+					ii0 = it1 + it0*NumbTimes;
+					sum += AMat[ii0]*ygauss[it1];
+   				}
+				//delete [] ygauss;
+				t0 = it0 + atom0*NumbTimes;
+				gausscoords[id0][t0]  = sum*BOHRRADIUS;
+			}
+		}
+    }
+}
+
+void diag(double *a, double *w, int N)
+{
+	int LDA = N;
+    int n = N, lda = LDA, info, lwork;
+    double wkopt;
+    double *work;
+    lwork = -1;
+    char u1[] = "Vectors";
+    char u2[] = "Upper";
+    dsyev_( u1, u2, &n, a, &lda, w, &wkopt, &lwork, &info );
+    lwork = (int)wkopt;
+    work = new double[lwork];
+    dsyev_( u1, u2, &n, a, &lda, w, work, &lwork, &info );
+    if( info > 0 )
+    {
+        cout<<"The algorithm failed to compute eigenvalues."<<endl;
+        exit( 1 );
+    }
+    delete [] work;
+} 
+
+void print_matrix( char *desc, int m, int n, double* a, int lda )
+{
+    int i, j;
+    cout<<desc<<endl;
+    for( i = 0; i < m; i++ )
+    {
+        for( j = 0; j < n; j++ )
+        {
+            cout<<a[i+j*lda]<<"  ";
+        }
+        cout<<endl;
+    }
+}
+#endif

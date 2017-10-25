@@ -2,6 +2,9 @@
 #define _MC_PIQMC_H 1
 
 void MCMolecularMove(int);
+#ifdef GAUSSIANMOVE
+void MCMolecularMoveGauss(int);
+#endif
 void MCBisectionMove(int,int);
 void MCBisectionMovePIGS(int,int);
 void MCRotationsMove(int);

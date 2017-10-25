@@ -26,8 +26,13 @@ const int MC_BINSR = 300;       // number of bins for radius original value=500
 const int MC_BINST = 50;       // number of bins for theta original value=100
 const int MC_BINSC = 100;       // number of bins for chi, added by Toby original value=200
 
+#ifndef NEWDENSITY
 const double MIN_RADIUS = 0.0;  // [AA], min radius for radial distribution functions 
 const double MAX_RADIUS = 15.0; // [AA], max radius for radial distribution functions original value=25
+#else
+const double MIN_RADIUS = -5.0;  // [AA], min radius for radial distribution functions 
+const double MAX_RADIUS = 5.0; // [AA], max radius for radial distribution functions original value=25
+#endif
 
 double _delta_radius;           // \delta r for density distributions    
 double _delta_theta;            // \delta\theta density distributions 
@@ -268,7 +273,11 @@ void densities_init(void)
 // if ((NUMB_MOLCTYPES>0) && (NUMB_MOLCS!=1))
 // nrerror(_proc_,"Only one molecular impurity");
 
+#ifndef NEWDENSITY
    NUMB_DENS1D = NUMB_ATOMTYPES;  //# atom-atom densities [no cross-distributions]
+#else
+   NUMB_DENS1D = NDIM;  //# atom-atom densities [no cross-distributions]
+#endif
 
    if (IMPURITY && (MCAtom[IMTYPE].molecule == 1))                          
      NUMB_DENS2D = NUMB_ATOMTYPES;  //# molecule-atoms distributions 
@@ -711,8 +720,17 @@ double GetPotEnergyPIGS(void)
     {
         int offset0 = 0;
         int t0  = offset0 + it;
+#ifndef GAUSSIANMOVE
         double E12     = -2.0*DipoleMomentAU2*MCCosine[2][t0]/(RR*RR*RR);
         spot    = E12*AuToKelvin;
+#else
+        double spot3d = 0.0;
+        for (int id = 0; id < NDIM; id++)
+        {
+            spot3d += 0.5*MCCoords[id][t0]*MCCoords[id][t0]/(BOHRRADIUS*BOHRRADIUS);
+        }
+        spot   = spot3d;
+#endif
     }
 
     double spot_cage = 0.0;
@@ -730,6 +748,147 @@ double GetPotEnergyPIGS(void)
 	}
 #endif
 	double spotReturn = (spot + spot_cage);
+	return spotReturn;
+}
+
+double GetPotEnergyPIGSENT(void)
+{
+	const char *_proc_=__func__; //  GetPotEnergy_Densities()  
+
+#ifdef DEBUG_WORM
+	if (Worm.exists)
+	nrerror(_proc_," Only for Z-configurations");
+#endif
+
+    string stype = MCAtom[IMTYPE].type;
+   	int it = ((NumbRotTimes - 1)/2);
+
+	double spot_sector, spot_pair, spot_cage, spot_sector_cage;
+	spot_sector      = 0.0;
+	spot_sector_cage = 0.0;
+	int atomStart, atomEnd;
+	for (int isector = 0; isector < 2; isector++)
+	{
+		if (isector == 0)
+		{
+			atomStart = 0;
+			atomEnd   = NumbAtoms/2;
+		}
+		if (isector == 1)
+		{
+			atomStart = NumbAtoms/2;
+			atomEnd   = NumbAtoms;
+		}
+
+		if ( (MCAtom[IMTYPE].molecule == 4) && (MCAtom[IMTYPE].numb > 1) )
+		{
+			double Eulang0[NDIM], Eulang1[NDIM];
+
+        	spot_pair = 0.0;
+        	for (int atom0=atomStart;atom0<(atomEnd-1);atom0++)
+			{
+           		int offset0 = NumbTimes*atom0;
+           		int t0 = offset0 + it;
+
+				if (stype == HF)
+				{
+   					Eulang0[PHI] = MCAngles[PHI][t0];
+   					Eulang0[CTH] = acos(MCAngles[CTH][t0]);
+   					Eulang0[CHI] = 0.0;
+				}
+
+        		for (int atom1=(atom0+1);atom1<atomEnd;atom1++)
+       			{
+            		int offset1 = NumbTimes*atom1;
+            		int t1 = offset1 + it;
+
+            		if (stype == HF)
+            		{
+   						Eulang1[PHI] = MCAngles[PHI][t1];
+   						Eulang1[CTH] = acos(MCAngles[CTH][t1]);
+   						Eulang1[CHI] = 0.0;
+                		spot_pair += PotFunc(atom0, atom1, Eulang0, Eulang1, it);
+            		} //stype
+
+            		if (stype == H2)
+           			{
+                		double s1 = 0.0;
+                		double s2 = 0.0;
+                		double dr2 = 0.0;
+						double dr[NDIM];
+                		for (int id=0;id<NDIM;id++)
+                		{
+                    		dr[id]  = (MCCoords[id][t0] - MCCoords[id][t1]);
+                    		dr2    += (dr[id]*dr[id]);
+                    		double cst1 = (MCCoords[id][t1] - MCCoords[id][t0])*MCCosine[id][t0];
+                    		double cst2 = (MCCoords[id][t1] - MCCoords[id][t0])*MCCosine[id][t1];
+                    		s1 += cst1;
+                    		s2 += cst2;
+                		}
+                		double r = sqrt(dr2);
+                		double th1 = acos(s1/r);
+                		double th2 = acos(s2/r);
+
+                		double b1[NDIM];
+                		double b2[NDIM];
+                		double b3[NDIM];
+                		for (int id=0;id<NDIM;id++)
+                		{
+                    		b1[id] = MCCosine[id][t0];
+                    		b2[id] = (MCCoords[id][t1] - MCCoords[id][t0])/r;
+                    		b3[id] = MCCosine[id][t1];
+                		}
+                		VectorNormalisation(b1);
+                		VectorNormalisation(b2);
+                		VectorNormalisation(b3);
+
+                		//Calculation of dihedral angle 
+                		double n1[NDIM];
+                		double n2[NDIM];
+                		double mm[NDIM];
+
+                		CrossProduct(b2, b1, n1);
+                		CrossProduct(b2, b3, n2);
+                		CrossProduct(b2, n2, mm);
+
+                		double xx = DotProduct(n1, n2);
+                		double yy = DotProduct(n1, mm);
+
+                		double phi = atan2(yy, xx);
+                		if (phi<0.0) phi += 2.0*M_PI;
+
+                		//Dihedral angle calculation is completed here
+                		double r1 = 0.74;// bond length in Angstrom
+						r1 /= BOHRRADIUS;
+                		double r2 = r1;// bond length in bohr
+                		double rd = r/BOHRRADIUS;
+                		double potl;
+                		vh2h2_(&rd, &r1, &r2, &th1, &th2, &phi, &potl);
+                		spot_pair += potl*CMRECIP2KL;
+            		} //stype
+
+        		}// loop over atoms1 
+       		}// loop over atoms0 
+			spot_sector += spot_pair;
+
+    		spot_cage = 0.0;
+#ifdef CAGEPOT
+    		for (int atom0 = atomStart; atom0 < atomEnd; atom0++)
+			{
+        		int offset0 = NumbTimes*atom0;
+        		int t0 = offset0 + it;
+    			double cost = MCAngles[CTH][t0];
+    			double phi = MCAngles[PHI][t0];
+    			if (phi < 0.0) phi = 2.0*M_PI + phi;
+    			phi = fmod(phi,2.0*M_PI);
+				int type0   =  MCType[atom0];
+    			spot_cage += LPot2DRotDOF(cost,phi,type0);
+			}
+			spot_sector_cage += spot_cage;
+#endif
+    	}
+	}
+	double spotReturn = 0.5*(spot_sector + spot_sector_cage);
 	return spotReturn;
 }
 
@@ -1059,6 +1218,25 @@ double GetPotEnergy_Densities(void)
 	return (spot/(double)NumbTimes);
 }
 
+#ifdef NEWDENSITY
+void GetDensities(void)
+{
+	const char *_proc_=__func__; //  GetPotEnergy_Densities()  
+
+    if ( (MCAtom[IMTYPE].molecule == 4) && (MCAtom[IMTYPE].numb == 1) )
+    {
+		int atom0 = 0;
+		int it = (NumbTimes - 1)/2;
+		int t0 = it + atom0*NumbTimes;
+		for (int id=0;id<NDIM;id++)
+		{
+			double r = MCCoords[id][t0]/BOHRRADIUS;
+           	bin_1Ddensity (r,id);    // densities 
+		}
+	}
+}
+#endif
+
 double GetTotalEnergy(void)
 {
 #ifdef PIGSENTBOTH
@@ -1171,8 +1349,17 @@ double GetTotalEnergy(void)
 		{
             int t0  = offset0 + it;
 
+#ifndef GAUSSIANMOVE
             E12     = -2.0*DipoleMomentAU2*MCCosine[2][t0]/(RR*RR*RR);
             spot   += E12*AuToKelvin;
+#else
+			double spot3d = 0.0;
+			for (int id = 0; id < NDIM; id++)
+			{
+            	spot3d += 0.5*MCCoords[id][t0]*MCCoords[id][t0]/(BOHRRADIUS*BOHRRADIUS);
+			}
+            spot   += spot3d;
+#endif
         }
     }
 
@@ -1198,6 +1385,147 @@ double GetTotalEnergy(void)
     }
 #endif
 	double spotReturn = 0.5*(spot + spot_cage);
+	return spotReturn;
+}
+
+double GetTotalEnergyPIGSENT(void)
+{
+    string stype = MCAtom[IMTYPE].type;
+	double spot_sector, spot_pair, spot_beads, spot_cage, spot_sector_cage;
+	spot_sector = 0.0;
+	spot_sector_cage = 0.0;
+	int atomStart, atomEnd;
+	for (int isector = 0; isector < 2; isector++)
+	{
+		if (isector == 0)
+		{
+			atomStart = 0;
+			atomEnd   = NumbAtoms/2;
+		}
+		if (isector == 1)
+		{
+			atomStart = NumbAtoms/2;
+			atomEnd   = NumbAtoms;
+		}
+
+		if ( (MCAtom[IMTYPE].molecule == 4) && (MCAtom[IMTYPE].numb > 1) )
+		{
+			spot_pair = 0.0;
+        	for (int atom0=atomStart;atom0<(atomEnd-1);atom0++)
+			{
+           		int offset0 = NumbTimes*atom0;
+
+        		for (int atom1=(atom0+1);atom1<atomEnd;atom1++)
+        		{
+            		int offset1 = NumbTimes*atom1;
+
+        			double spot_beads = 0.0;
+            		#pragma omp parallel for reduction(+: spot_beads)
+            		for (int it = 0; it < NumbTimes; it += (NumbTimes - 1))
+					{
+                		int t0 = offset0 + it;
+                		int t1 = offset1 + it;
+                		int tm0=offset0 + it/RotRatio;
+                		int tm1=offset1 + it/RotRatio;
+
+                		if (stype == H2)
+                		{
+                    		double s1 = 0.0;
+                    		double s2 = 0.0;
+                    		double dr2 = 0.0;
+				    		double dr[NDIM];
+                    		for (int id=0;id<NDIM;id++)
+                    		{
+                        		dr[id]  = (MCCoords[id][t0] - MCCoords[id][t1]);
+                        		dr2    += (dr[id]*dr[id]);
+                        		double cst1 = (MCCoords[id][t1] - MCCoords[id][t0])*MCCosine[id][tm0];
+                        		double cst2 = (MCCoords[id][t1] - MCCoords[id][t0])*MCCosine[id][tm1];
+                        		s1 += cst1;
+                        		s2 += cst2;
+                    		}
+                    		double r = sqrt(dr2);
+                    		double th1 = acos(s1/r);
+                    		double th2 = acos(s2/r);
+
+                    		double b1[NDIM];
+                    		double b2[NDIM];
+                    		double b3[NDIM];
+                    		for (int id=0;id<NDIM;id++)
+                    		{
+                        		b1[id] = MCCosine[id][tm0];
+                        		b2[id] = (MCCoords[id][t1] - MCCoords[id][t0])/r;
+                        		b3[id] = MCCosine[id][tm1];
+                    		}
+                    		VectorNormalisation(b1);
+                    		VectorNormalisation(b2);
+                    		VectorNormalisation(b3);
+
+                    		//Calculation of dihedral angle 
+                    		double n1[NDIM];
+                    		double n2[NDIM];
+                    		double mm[NDIM];
+
+                    		CrossProduct(b2, b1, n1);
+                    		CrossProduct(b2, b3, n2);
+                    		CrossProduct(b2, n2, mm);
+
+                    		double xx = DotProduct(n1, n2);
+                    		double yy = DotProduct(n1, mm);
+
+                    		double phi = atan2(yy, xx);
+                    		if (phi<0.0) phi += 2.0*M_PI;
+
+                    		//Dihedral angle calculation is completed here
+                			double r1 = 0.74;// bond length in Angstrom
+							r1 /= BOHRRADIUS;
+                    		double r2 = r1;// bond length in bohr
+                    		double rd = r/BOHRRADIUS;
+                    		double potl;
+                    		vh2h2_(&rd, &r1, &r2, &th1, &th2, &phi, &potl);
+                    		spot_beads += potl*CMRECIP2KL;
+                		} //stype
+                		if (stype == HF)
+                		{
+							double Eulang0[NDIM], Eulang1[NDIM];
+   							Eulang0[PHI] = MCAngles[PHI][t0];
+   							Eulang0[CTH] = acos(MCAngles[CTH][t0]);
+   							Eulang0[CHI] = 0.0;
+   							Eulang1[PHI] = MCAngles[PHI][t1];
+   							Eulang1[CTH] = acos(MCAngles[CTH][t1]);
+   							Eulang1[CHI] = 0.0;
+                			spot_pair += PotFunc(atom0, atom1, Eulang0, Eulang1, it);
+                		} //stype
+					}//loop over beads
+					spot_pair += spot_beads;
+        		}// loop over atoms1 (molecules)
+        	}// loop over atoms0 (molecules)
+			spot_sector += 0.5*spot_pair;
+
+    		spot_cage = 0.0;
+#ifdef CAGEPOT
+    		for (int atom0 = atomStart; atom0 < atomEnd; atom0++)
+    		{
+        		int offset0 = NumbTimes*atom0;
+
+   				spot_beads=0.0;
+       			#pragma omp parallel for reduction(+: spot_beads)
+       			for (int it = 0; it < NumbTimes; it += (NumbTimes - 1))
+				{
+        			int t0 = offset0 + it;
+        			double cost = MCAngles[CTH][t0];
+        			double phi = MCAngles[PHI][t0];
+        			if (phi < 0.0) phi = 2.0*M_PI + phi;
+        			phi = fmod(phi,2.0*M_PI);
+        			int type0   =  MCType[atom0];
+        			spot_beads += LPot2DRotDOF(cost,phi,type0);
+				}
+				spot_cage += spot_beads;
+    		}
+			spot_sector_cage += 0.5*spot_cage;
+#endif
+		}
+	}
+	double spotReturn = 0.5*(spot_sector + spot_sector_cage);
 	return spotReturn;
 }
 
@@ -1339,6 +1667,87 @@ void GetCosTheta(double &cosTheta, double *compxyz)
 	compxyz[2] = scompxyz[2]/NumbAtoms;
 }
 
+void GetCosThetaPIGSENT(double &cosTheta, double *compxyz)
+{
+    const char *_proc_=__func__; 
+
+    // if user passed in a null pointer for array, bail out early!
+    if (!compxyz)
+        return;
+#ifdef PIGSENTBOTH
+	int atomStart = NumbAtoms/2;
+#else
+	int atomStart = 0;
+#endif
+
+    int it = (NumbRotTimes - 1)/2;
+
+	double scosTheta_pair;
+	double scompxyz_pair[NDIM];
+	double scosTheta_sector;
+	double scompxyz_sector[NDIM];
+
+	if(MCAtom[IMTYPE].numb > 1)
+	{
+		int atomStart, atomEnd;
+		for (int isector = 0; isector < 2; isector++)
+		{
+			if (isector == 0)
+			{
+				atomStart = 0;
+				atomEnd   = NumbAtoms/2;
+			}
+			if (isector == 1)
+			{
+				atomStart = NumbAtoms/2;
+				atomEnd   = NumbAtoms;
+			}
+
+        	scosTheta_pair= 0.0;
+    		for (int atom0 = atomStart; atom0 < (atomEnd-1); atom0++)
+        	{    
+    	    	for (int atom1 = (atom0+1); atom1 < atomEnd; atom1++)
+    	    	{
+        	    	int offset0 = MCAtom[IMTYPE].offset + NumbRotTimes*atom0;
+        	    	int offset1 = MCAtom[IMTYPE].offset + NumbRotTimes*atom1;
+
+       		    	int t0      = offset0 + it;
+        	    	int t1      = offset1 + it;
+
+                	double cst  = 0.0;
+           	    	for (int id = 0; id < NDIM; id++)
+           	    	{    
+               	    	cst    += MCCosine[id][t0]*MCCosine[id][t1];
+           	    	}
+           	    	scosTheta_pair += cst;
+    			}     // LOOP OVER ATOM PAIRS
+			}
+
+			scompxyz_pair[0] = 0.0;
+			scompxyz_pair[1] = 0.0;
+			scompxyz_pair[2] = 0.0;
+
+    		for (int atom0 = atomStart; atom0 < atomEnd; atom0++)
+        	{    
+            	int offset0 = MCAtom[IMTYPE].offset + NumbRotTimes*atom0;
+       			int t0      = offset0 + it;
+
+				scompxyz_pair[0] += MCCosine[0][t0];
+				scompxyz_pair[1] += MCCosine[1][t0];
+				scompxyz_pair[2] += MCCosine[2][t0];
+			}
+		}
+		scosTheta_sector += 0.5*scosTheta_pair;
+		scompxyz_sector[0] += 0.5*scompxyz_pair[0];
+        scompxyz_sector[1] += 0.5*scompxyz_pair[1];
+        scompxyz_sector[2] += 0.5*scompxyz_pair[2];
+	}
+	cosTheta = scosTheta_sector;
+	compxyz[0] = scompxyz_sector[0]/NumbAtoms;
+	compxyz[1] = scompxyz_sector[1]/NumbAtoms;
+	compxyz[2] = scompxyz_sector[2]/NumbAtoms;
+}
+
 void GetDipoleCorrelation(double *DipoleCorrXYZ, double *DipoleCorrX, double *DipoleCorrY, double *DipoleCorrZ, double *DipoleCorrXY)
 {
     const char *_proc_=__func__; 
@@ -1386,6 +1795,66 @@ void GetDipoleCorrelation(double *DipoleCorrXYZ, double *DipoleCorrX, double *Di
                	DipoleCorrXY[ii]  = xyCorr;
 				ii++;
     		}
+		}
+	}
+}
+
+void GetDipoleCorrelationPIGSENT(double *DipoleCorrXYZ, double *DipoleCorrX, double *DipoleCorrY, double *DipoleCorrZ, double *DipoleCorrXY)
+{
+    const char *_proc_=__func__; 
+    int it = (NumbRotTimes - 1)/2;
+	if(MCAtom[IMTYPE].numb > 1)
+	{
+        double totalCorr, xCorr, yCorr, zCorr, xyCorr;
+
+		int atomStart, atomEnd;
+		for (int isector = 0; isector < 2; isector++)
+		{
+			if (isector == 0)
+			{
+				atomStart = 0;
+				atomEnd   = NumbAtoms/2;
+			}
+			if (isector == 1)
+			{
+				atomStart = NumbAtoms/2;
+				atomEnd   = NumbAtoms;
+			}
+
+			int ii = 0;
+    		for (int atom0 = atomStart; atom0 < (atomEnd - 1); atom0++)
+        	{    
+    	    	for (int atom1 = (atom0 + 1); atom1 < atomEnd; atom1++)
+    	    	{
+            		int offset0 = MCAtom[IMTYPE].offset + NumbRotTimes*atom0;
+            		int offset1 = MCAtom[IMTYPE].offset + NumbRotTimes*atom1;
+
+       	    		int t0      = offset0 + it;
+            		int t1      = offset1 + it;
+
+               		totalCorr   = 0.0;
+					xyCorr      = 0.0;
+               		for (int id = 0; id < NDIM; id++)
+               		{    
+           	    		totalCorr += MCCosine[id][t0]*MCCosine[id][t1];
+               		}
+
+               		xCorr   = MCCosine[0][t0]*MCCosine[0][t1];
+               		yCorr   = MCCosine[1][t0]*MCCosine[1][t1];
+               		zCorr   = MCCosine[2][t0]*MCCosine[2][t1];
+
+               		for (int id = 0; id < (NDIM-1); id++)
+					{
+           	    		xyCorr += MCCosine[id][t0]*MCCosine[id][t1];
+					}	
+               		DipoleCorrXYZ[ii] += 0.5*totalCorr;
+               		DipoleCorrX[ii]   += 0.5*xCorr;
+               		DipoleCorrY[ii]   += 0.5*yCorr;
+               		DipoleCorrZ[ii]   += 0.5*zCorr;
+               		DipoleCorrXY[ii]  += 0.5*xyCorr;
+					ii++;
+    			}
+			}
 		}
 	}
 }
@@ -2653,7 +3122,11 @@ void SaveGraSum(const char fname [], double acount)
 
   fid.open(fdens.c_str(),ios::out); io_setout(fid);
 
+#ifndef NEWDENSITY
   double norma = _delta_radius*acount*(double)(NumbTimes);
+#else
+  double norma = _delta_radius*acount;
+#endif
 
   double r;
 
@@ -2670,7 +3143,11 @@ void SaveGraSum(const char fname [], double acount)
 //      double nfact = norma*(double)(MCAtom[id].numb*(MCAtom[id].numb-1));
 //      the following scaling is to let the gra_sum to be normalized to one by integrating over dr, without any jacobian factor
 //      norma = norma * (MCAtom[id].numb*(MCAtom[id].numb-1))/2.0;
+#ifndef NEWDENSITY
         fid <<setw(IO_WIDTH)<<_gr1D_sum[id][ir]/(norma*(MCAtom[id].numb*(MCAtom[id].numb-1))/2.0)<<BLANK;   // gra_sum
+#else
+        fid <<setw(IO_WIDTH)<<_gr1D_sum[id][ir]/norma<<BLANK;   // gra_sum
+#endif
      }
 
      fid<<endl;
@@ -2695,8 +3172,12 @@ void SaveDensities1D(const char fname [], double acount)
 
   double volume = pow(BoxSize,(double)NDIM);     // 3D only  
 
+#ifndef NEWDENSITY
   double norm0  = 2.0*M_PI*_delta_radius*acount  // normalization factor for 
                 *(double)(NumbTimes)/volume;     // radial distribution functions 
+#else
+  double norm0 = _delta_radius*acount;
+#endif
 
   double r,r2;
 
@@ -2712,7 +3193,11 @@ void SaveDensities1D(const char fname [], double acount)
      for (int id=0;id<NUMB_DENS1D;id++)
      { 
         double nfact = norm0*(double)(MCAtom[id].numb*(MCAtom[id].numb-1));
+#ifndef NEWDENSITY
         fid <<setw(IO_WIDTH)<<_gr1D[id][ir]/(r2*nfact)<<BLANK;   // gra
+#else
+        fid <<setw(IO_WIDTH)<<_gr1D[id][ir]/norm0<<BLANK;   // gra
+#endif
      } 
 
      fid<<endl;

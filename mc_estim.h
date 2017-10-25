@@ -87,4 +87,12 @@ double DotProduct(double *, double *);
 void CrossProduct(double *, double *, double *);
 void UnitVectors(const double *, double *);
 double PotFunc(int , int , const double *, const double *, int );
+
+double GetPotEnergyPIGSENT(void);
+double GetTotalEnergyPIGSENT(void);
+void GetDipoleCorrelationPIGSENT(double *, double *, double *, double *, double *);
+void GetCosThetaPIGSENT(double &, double *);
+#ifdef NEWDENSITY
+void GetDensities(void);
+#endif
 #endif  // mc_estim.h

@@ -16,7 +16,7 @@ options= -Ofast -fopenmp
 #-DCAGEPOT
 
 # CFLAGS for Finite Temperature Calculations 
-CFLAGS =-I./sprng/include -I/usr/local/include -DTYPE1 -DCHAINCONFIG -DMOVECOM -DPIMCTYPE
+CFLAGS =-I./sprng/include -I/usr/local/include -DTYPE1 -DCHAINCONFIG -DPIMCTYPE
 #-DPOTH2
 #-DINSTANT -DPIMCINSTANT -DIOFILES -DCAGEPOT
 

@@ -253,4 +253,12 @@ void MCConfigInit(void);
 void MCSetUnits_HO_TEST(void);
 void ParamsPotential(void);
 
+#ifdef GAUSSIANMOVE
+void ProposedMCCoords();
+void GetRandomCoords();
+extern "C" void dsyev_( char* jobz, char* uplo, int* n, double* a, int* lda, double* w, double* work, int* lwork, int* info );
+void print_matrix( char *desc, int m, int n, double* a, int lda );
+void diag(double *a, double *w, int N);
+extern double ** gausscoords;  // buffer for new coordinates
+#endif
 #endif  //MM_setup.h

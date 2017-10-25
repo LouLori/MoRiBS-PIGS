@@ -24,19 +24,26 @@ class Specification:
 
 def	FigureENT(FileToBePlot,FilePlot,TypeCal,variableName,parameter,ExactValue,numbmolecules,molecule,Rpt,dipolemoment):
 	outfile = FilePlot
-	fig = plt.figure(figsize=(6, 4), dpi=200)
+	fig = plt.figure(figsize=(8, 4), dpi=200)
 
-	font=18
+	font=12
 	#plt.grid(True)
-	#plt.xlim(0,0.25)
 
 	#x      = Specification()
 
-	data1            = loadtxt(FileToBePlot,unpack=True, usecols=[1,5,9])
-	beta1, entropy1, error1 = data1
-
+	beta1, purity1, entropy1, err_purity1, err_entropy1 = loadtxt(FileToBePlot,unpack=True, usecols=[1, 4, 5, 8, 9])
+	plt.subplot(2, 1, 1)
+	error1 = err_entropy1
 	plt.errorbar(beta1, entropy1, yerr=error1, color = 'b', ls = '-', label = 'PIGS', linewidth=1)
-	plt.axhline(y=ExactValue, color='black', lw = 2.0, linestyle='--', label = 'Exact')
+	if (variableName == "beta"):
+		data2        = loadtxt(ExactValue,unpack=True, usecols=[0,2])
+		beta2, entropy2 = data2
+		plt.xlim(0,0.201)
+		plt.plot(beta2, entropy2, color = 'black', ls = '--', label = 'Diagonalization', linewidth=1)
+
+	if (variableName == "tau"):
+		plt.xlim(0,)
+		plt.axhline(y=ExactValue, color='black', lw = 2.0, linestyle='--', label = 'Diagonalization')
 
 	ymin, ymax = plt.ylim()
 	midpointy = 0.5*(ymax-ymin)
@@ -51,25 +58,75 @@ def	FigureENT(FileToBePlot,FilePlot,TypeCal,variableName,parameter,ExactValue,nu
 
 
 	if (variableName == "beta"):
-		plt.xlabel(r'$\mathrm{\beta \ \  Kelvin^{-1}}$', fontsize = font)
+		plt.xlabel(r'$\mathrm{\beta \ \  (Kelvin^{-1}})$', fontsize = font)
+	'''
 		plt.text(textpositionx, textpositiony+0*deltay, 'Parameters:', fontsize=10)
 		plt.text(textpositionx, textpositiony-1*deltay, r'$\mathrm{N} =$'+str(numbmolecules)+" "+molecule, fontsize=10)
 		plt.text(textpositionx, textpositiony-2*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
 		plt.text(textpositionx, textpositiony-3*deltay, r'$\mathrm{\mu} =$'+str(dipolemoment)+"Debye", fontsize=10)
 		plt.text(textpositionx, textpositiony-4*deltay, r'$\mathrm{\tau} =$' +str(parameter) +' '+"K"+r'$^{-1}$', fontsize=10)
+	'''
 	if (variableName == "tau"):
-		plt.xlabel(r'$\mathrm{\tau \ \  Kelvin^{-1}}$', fontsize = font)
-		plt.text(textpositionx, textpositiony+5*deltay, 'Parameters:', fontsize=10)
-		plt.text(textpositionx, textpositiony+4*deltay, r'$\mathrm{N} =$'+str(numbmolecules)+" "+molecule, fontsize=10)
-		plt.text(textpositionx, textpositiony+3*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
-		plt.text(textpositionx, textpositiony+2*deltay, r'$\mathrm{\mu} =$'+str(dipolemoment)+"Debye", fontsize=10)
-		plt.text(textpositionx, textpositiony+1*deltay, r'$\mathrm{\beta} =$' +str(parameter) +' '+"K"+r'$^{-1}$', fontsize=10)
+		plt.xlabel(r'$\mathrm{\tau \ \  (Kelvin^{-1}})$', fontsize = font)
+	'''
+		plt.text(textpositionx, textpositiony+0*deltay, 'Parameters:', fontsize=10)
+		plt.text(textpositionx, textpositiony-1*deltay, r'$\mathrm{N} =$'+str(numbmolecules)+" "+molecule, fontsize=10)
+		plt.text(textpositionx, textpositiony-2*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
+		plt.text(textpositionx, textpositiony-3*deltay, r'$\mathrm{\mu} =$'+str(dipolemoment)+"Debye", fontsize=10)
+		plt.text(textpositionx, textpositiony-4*deltay, r'$\mathrm{\beta} =$' +str(parameter) +' '+"K"+r'$^{-1}$', fontsize=10)
+	'''
+	
+	plt.ylabel(r'$\mathrm{S_{2}}$', fontsize = font)
+
+	plt.subplot(2, 1, 2)
+	error1 = err_entropy1
+	plt.errorbar(beta1, entropy1, yerr=error1, color = 'b', ls = '-', label = 'PIGS', linewidth=1)
+	if (variableName == "beta"):
+		data2        = loadtxt(ExactValue,unpack=True, usecols=[0,2])
+		beta2, entropy2 = data2
+		plt.xlim(0,0.201)
+		plt.plot(beta2, entropy2, color = 'black', ls = '--', label = 'Diagonalization', linewidth=1)
+
+	if (variableName == "tau"):
+		plt.xlim(0,)
+		plt.axhline(y=ExactValue, color='black', lw = 2.0, linestyle='--', label = 'Diagonalization')
+
+	ymin, ymax = plt.ylim()
+	midpointy = 0.5*(ymax-ymin)
+	deltay = midpointy*0.15
+	xmin, xmax = plt.xlim()
+	midpointx = 0.5*(xmax-xmin)
+	deltax = midpointx*0.15
+	textpositionx = xmin+midpointx-0.25*midpointx
+	textpositiony = ymin+midpointy
+	print(textpositionx)
+	print(textpositiony)
+
+
+	if (variableName == "beta"):
+		plt.xlabel(r'$\mathrm{\beta \ \  (Kelvin^{-1}})$', fontsize = font)
+	'''
+		plt.text(textpositionx, textpositiony+0*deltay, 'Parameters:', fontsize=10)
+		plt.text(textpositionx, textpositiony-1*deltay, r'$\mathrm{N} =$'+str(numbmolecules)+" "+molecule, fontsize=10)
+		plt.text(textpositionx, textpositiony-2*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
+		plt.text(textpositionx, textpositiony-3*deltay, r'$\mathrm{\mu} =$'+str(dipolemoment)+"Debye", fontsize=10)
+		plt.text(textpositionx, textpositiony-4*deltay, r'$\mathrm{\tau} =$' +str(parameter) +' '+"K"+r'$^{-1}$', fontsize=10)
+	'''
+	if (variableName == "tau"):
+		plt.xlabel(r'$\mathrm{\tau \ \  (Kelvin^{-1}})$', fontsize = font)
+	'''
+		plt.text(textpositionx, textpositiony+0*deltay, 'Parameters:', fontsize=10)
+		plt.text(textpositionx, textpositiony-1*deltay, r'$\mathrm{N} =$'+str(numbmolecules)+" "+molecule, fontsize=10)
+		plt.text(textpositionx, textpositiony-2*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
+		plt.text(textpositionx, textpositiony-3*deltay, r'$\mathrm{\mu} =$'+str(dipolemoment)+"Debye", fontsize=10)
+		plt.text(textpositionx, textpositiony-4*deltay, r'$\mathrm{\beta} =$' +str(parameter) +' '+"K"+r'$^{-1}$', fontsize=10)
+	'''
 	
 	plt.ylabel(r'$\mathrm{S_{2}}$', fontsize = font)
 
 
 	plt.subplots_adjust(top=0.95, bottom=0.20, left=0.15, right=0.95, hspace=0.6, wspace=1.0)
-	plt.legend(bbox_to_anchor=(0.70, 0.70), loc=2, borderaxespad=0.)
+	plt.legend(bbox_to_anchor=(0.60, 0.40), loc=2, borderaxespad=0., shadow=True, fontsize = font)
 	plt.savefig(outfile, dpi = 200, format = 'pdf')
 
 	call(["open", outfile])
@@ -80,7 +137,7 @@ def	FigureCorrelationPIGS(FileToBePlot,FilePlot,TypeCorr,variableName,parameter,
 	outfile = FilePlot
 	fig = plt.figure(figsize=(6, 4), dpi=200)
 
-	font=18
+	font=12
 	datacorr = genfromtxt(FileToBePlot)
 	FuncCorr = np.zeros((numbmolecules,numbmolecules))
 	ErrorFuncCorr = np.zeros((numbmolecules,numbmolecules))
@@ -128,7 +185,7 @@ def	FigureCorrelationPIGS(FileToBePlot,FilePlot,TypeCorr,variableName,parameter,
 		plt.text(textpositionx, textpositiony-5*deltay, r'$\mathrm{i} = $' + str(RefPoint), fontsize=10)
 
 	if (variableName == "tau"):
-		plt.xlabel(r'$\mathrm{\tau \ \  Kelvin^{-1}}$', fontsize = font)
+		plt.xlabel(r'$\mathrm{\tau \ \  (Kelvin^{-1}})$', fontsize = font)
 		plt.text(textpositionx, textpositiony+5*deltay, 'Parameters:', fontsize=10)
 		plt.text(textpositionx, textpositiony+4*deltay, r'$\mathrm{N} =$'+str(numbmolecules)+" "+molecule, fontsize=10)
 		plt.text(textpositionx, textpositiony+3*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
@@ -148,7 +205,7 @@ def	FigureCorrelationPIGS(FileToBePlot,FilePlot,TypeCorr,variableName,parameter,
 		plt.ylabel(r'$\mathrm{C^{X,Y}_{ij}}$', fontsize = font)
 
 	plt.subplots_adjust(top=0.95, bottom=0.20, left=0.17, right=0.95, hspace=0.6, wspace=1.0)
-	plt.legend(bbox_to_anchor=(0.70, 0.70), loc=2, borderaxespad=0.)
+	plt.legend(bbox_to_anchor=(0.70, 0.70), loc=2, borderaxespad=0., shadow=True, fontsize = font)
 	plt.savefig(outfile, dpi = 200, format = 'pdf')
 
 	#call(["okular", outfile])
@@ -199,7 +256,6 @@ def PlotLabelEnergyPIGS(font,xmin,xmax,ymin,ymax,variableName,parameter,numbmole
 		plt.text(textpositionx, textpositiony-2*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
 		plt.text(textpositionx, textpositiony-3*deltay, r'$\mathrm{\mu} =$'+str(dipolemoment)+"Debye", fontsize=10)
 		plt.text(textpositionx, textpositiony-4*deltay, r'$\mathrm{\tau} =$' +str(parameter) +' '+"K"+r'$^{-1}$', fontsize=10)
-		plt.text(textpositionx, textpositiony-5*deltay, r'$\mathrm{i} = 1$', fontsize=10)
 
 	if (variableName == "tau"):
 		plt.text(textpositionx, textpositiony+5*deltay, 'Parameters:', fontsize=10)
@@ -207,28 +263,38 @@ def PlotLabelEnergyPIGS(font,xmin,xmax,ymin,ymax,variableName,parameter,numbmole
 		plt.text(textpositionx, textpositiony+3*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
 		plt.text(textpositionx, textpositiony+2*deltay, r'$\mathrm{\mu} =$'+str(dipolemoment)+"Debye", fontsize=10)
 		plt.text(textpositionx, textpositiony+1*deltay, r'$\mathrm{\beta} =$' +str(parameter) +' '+"K"+r'$^{-1}$', fontsize=10)
-		plt.text(textpositionx, textpositiony+0*deltay, r'$\mathrm{i} = 1$', fontsize=10)
 	
 
 def PlotEnergyPIGS(font,val1,val2,val3,variableName,YLabel):
 	#plt.grid(True)
 	if (variableName == "tau"):
-		plt.xlabel(r'$\mathrm{\tau \ \  Kelvin^{-1}}$', fontsize = font)
+		plt.xlabel(r'$\mathrm{\tau \ \  (Kelvin^{-1}})$', fontsize = font)
 	if (variableName == "beta"):
-		plt.xlabel(r'$\mathrm{\beta \ \  Kelvin^{-1}}$', fontsize = font)
+		plt.xlabel(r'$\mathrm{\beta \ \  (Kelvin^{-1}})$', fontsize = font)
 		
 	if (YLabel == "Total"):
 		plt.ylabel(r'$\mathrm{E_{0}}$ (Kelvin)', fontsize = font)
 		if (variableName == "tau"):
 			plotfitting(val1, val2, val3)
+			plt.errorbar(val1, val2, yerr = val3, color = 'b', ls = '-', label = 'PIGS', linewidth=1)
+		if (variableName == "beta"):
+			plt.errorbar(val1, val2, yerr = val3, color = 'b', ls = '-', label = 'PIGS', linewidth=1)
+			ExactValueFile = "ResultsOfPIGSENT/ENT-RotDOFs-Rpt10.05Angstrom-DipoleMoment1.826Debye-Entropy-vs-beta-fixed-tau0.005Kinv-System2HF-ParticleA1-by-Dmitri.txt"
+			data2        = loadtxt(ExactValueFile,unpack=True, usecols=[0,1])
+			beta2, energy2 = data2
+			plt.xlim(0,0.201)
+			plt.plot(beta2, energy2, color = 'black', ls = '--', label = 'Diagonalization', linewidth=2)
 	if (YLabel == "Potential"):
 		plt.ylabel(r'$\mathrm{V_{0}}$ (Kelvin)', fontsize = font)
+		plt.xlim(0,0.201)
+		plt.errorbar(val1, val2, yerr = val3, color = 'b', ls = '-', label = 'PIGS', linewidth=1)
 
 	if (YLabel == "Rotational"):
 		plt.ylabel(r'$\mathrm{K_{0}^{Rot}}$ (Kelvin)', fontsize = font)
+		plt.xlim(0,0.201)
+		plt.errorbar(val1, val2, yerr = val3, color = 'b', ls = '-', label = 'PIGS', linewidth=1)
 
-	plt.errorbar(val1, val2, yerr = val3, color = 'b', ls = '-', label = 'PIGS', linewidth=1)
-	plt.legend(loc='upper right', shadow=True, fontsize = 8)
+	plt.legend(loc='upper right', shadow=True, fontsize = font)
 	if (variableName == "tau"):
 		plt.xlim(0.000,0.00505)
 		x = [0.000, 0.0005, 0.001, 0.0015, 0.002, 0.0025, 0.003, 0.0035, 0.004, 0.0045, 0.005]

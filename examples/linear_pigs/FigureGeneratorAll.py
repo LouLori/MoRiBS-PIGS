@@ -25,8 +25,8 @@ TransMove           = "No"
 RotMove             = "Yes"
 #
 #TypeCal             = 'PIMC'
-TypeCal             = 'PIGS'
-#TypeCal             = 'ENT'
+#TypeCal             = 'PIGS'
+TypeCal             = 'ENT'
 #
 TypePlot            = "Energy"
 #TypePlot            = "ChemPot"
@@ -37,12 +37,12 @@ molecule            = "HF"
 #molecule            = "H2"                                                    
 molecule_rot        = "HF"
 #
-numbblocks	        = 200000
+numbblocks	        = 50000
 numbmolecules       = 2
 numbpass            = 200
 #
 Rpt                 = 10.05
-dipolemoment        = 0.45 #1.826        #J. Chern. Phys. 73(5), 2319 (1980).
+dipolemoment        = 1.826        #J. Chern. Phys. 73(5), 2319 (1980).
 
 preskip             = 0
 postskip            = 0
@@ -71,13 +71,21 @@ if (variableName == "beta"):
 FilePlotName = support.GetFileNamePlot(TypeCal, molecule_rot, TransMove, RotMove, variableName, Rpt, dipolemoment, parameterName, parameter, numbblocks, numbpass, numbmolecules, molecule, ENT_TYPE, preskip, postskip, extra_file_name, src_dir, particleA)
 
 if (TypeCal == "ENT"):
-	ExactValueFile    = "ResultsOfPIGSENT/ExactValue-Entropy-RotDOFs-Rpt10.05Angstrom-DipoleMoment1.826Debye-Dmitri.txt"
-	NumberOfMolecules, ExactEntropy = np.loadtxt(ExactValueFile, usecols=(0, 1), unpack=True)
-	index = numbmolecules/2 - 1
-	ExactEntropyValue = ExactEntropy[index]
-	FileToBePlot   	  = FilePlotName.SaveEntropy+".txt"
-	FilePlot          = FilePlotName.SaveEntropy+".pdf"
-	FigureGenerator.FigureENT(FileToBePlot,FilePlot,TypeCal,variableName,parameter,ExactEntropyValue,numbmolecules,molecule,Rpt,dipolemoment)
+	if (variableName == "tau"):
+		ExactValueFile    = "ResultsOfPIGSENT/ExactValue-Entropy-RotDOFs-Rpt10.05Angstrom-DipoleMoment1.826Debye-Dmitri.txt"
+		NumberOfMolecules, ExactEntropy = np.loadtxt(ExactValueFile, usecols=(0, 1), unpack=True)
+		index = numbmolecules/2 - 1
+		ExactEntropyValue = ExactEntropy[index]
+		FileToBePlot   	  = FilePlotName.SaveEntropy+".txt"
+		FilePlot          = FilePlotName.SaveEntropy+".pdf"
+		call(["rm", FilePlot])
+		FigureGenerator.FigureENT(FileToBePlot,FilePlot,TypeCal,variableName,parameter,ExactEntropyValue,numbmolecules,molecule,Rpt,dipolemoment)
+	if (variableName == "beta"):
+		ExactValueFile    = "ResultsOfPIGSENT/ENT-RotDOFs-Rpt10.05Angstrom-DipoleMoment1.826Debye-Entropy-vs-beta-fixed-tau0.005Kinv-System2HF-ParticleA1-by-Dmitri.txt"
+		FileToBePlot   	  = FilePlotName.SaveEntropy+".txt"
+		FilePlot          = FilePlotName.SaveEntropy+".pdf"
+		call(["rm", FilePlot])
+		FigureGenerator.FigureENT(FileToBePlot,FilePlot,TypeCal,variableName,parameter,ExactValueFile,numbmolecules,molecule,Rpt,dipolemoment)
 
 if (TypeCal == "PIGS"):
 	if (TypePlot == "CorrFunc"):
