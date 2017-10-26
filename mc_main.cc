@@ -1060,6 +1060,7 @@ void MCGetAveragePIGS(void)
 
 #ifdef NEWDENSITY
 	GetDensities();
+	GetDensitiesEndBeads();
 #endif
 	double spot       = GetPotEnergyPIGS(); // pot energy and density distributions
 	_bpot            += spot;                     // block average for pot energy
@@ -1806,7 +1807,15 @@ void SaveInstantAngularDOF(long int numb)
 	int t0 = it + atom0*NumbTimes;
 	for (int id = 0; id < NDIM; id++)
 	{
-   		_fangins << setw(IO_WIDTH) << MCCoords[0][t0]/BOHRRADIUS<< BLANK;
+   		_fangins << setw(IO_WIDTH) << MCCoords[id][t0]/BOHRRADIUS<< BLANK;
+	}
+	for (int id = 0; id < NDIM; id++)
+	{
+   		_fangins << setw(IO_WIDTH) << MCCoords[id][0]/BOHRRADIUS<< BLANK;
+	}
+	for (int id = 0; id < NDIM; id++)
+	{
+   		_fangins << setw(IO_WIDTH) << MCCoords[id][NumbTimes-1]/BOHRRADIUS<< BLANK;
 	}
 #endif
 

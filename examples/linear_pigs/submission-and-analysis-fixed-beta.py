@@ -21,11 +21,11 @@ TransMove           = "No"
 RotMove             = "Yes"
 #
 status              = "submission"                                            
-status              = "analysis"                                            
+#status              = "analysis"                                            
 #
 NameOfServer        = "nlogn"
 #NameOfServer        = "graham"
-NameOfPartition     = "tapas"
+NameOfPartition     = "ntapas"
 #
 #TypeCal             = "PIMC"
 #TypeCal             = "PIGS"
@@ -46,7 +46,7 @@ numbpass            = 200
 #
 Rpt                 = 10.05
 dipolemoment        = 1.826  #J. Chern. Phys. 73(5), 2319 (1980).
-dipolemoment        = 1.0*dipolemoment
+dipolemoment        = 2.0*dipolemoment
 
 status_rhomat       = "Yes"                                                 
 status_cagepot      = "No"                                                      
@@ -55,8 +55,8 @@ RUNDIR              = "scratch"
 RUNIN               = "nCPU"
 
 loopStart           = 40
-loopEnd             = 102
-skip                = 5
+loopEnd             = 36
+skip                = 10
 
 preskip             = 0
 postskip            = 0

@@ -24,15 +24,47 @@ class Specification:
 
 def	FigureENT(FileToBePlot,FilePlot,TypeCal,variableName,parameter,ExactValue,numbmolecules,molecule,Rpt,dipolemoment):
 	outfile = FilePlot
-	fig = plt.figure(figsize=(8, 4), dpi=200)
+	fig = plt.figure(figsize=(16, 8), dpi=400)
 
-	font=12
+	font=22
 	#plt.grid(True)
 
 	#x      = Specification()
 
 	beta1, purity1, entropy1, err_purity1, err_entropy1 = loadtxt(FileToBePlot,unpack=True, usecols=[1, 4, 5, 8, 9])
-	plt.subplot(2, 1, 1)
+	plt.subplot(1,2, 1)
+	plt.errorbar(beta1, purity1, yerr=err_purity1, color = 'b', ls = '-', label = 'PIGS', linewidth=1)
+	if (variableName == "beta"):
+		data2        = loadtxt(ExactValue,unpack=True, usecols=[0,2])
+		beta2, entropy2 = data2
+		plt.xlim(0,0.201)
+		plt.plot(beta2, entropy2, color = 'black', ls = '--', label = 'Diagonalization', linewidth=1)
+
+	if (variableName == "tau"):
+		plt.xlim(0,)
+		#plt.axhline(y=ExactValue, color='black', lw = 2.0, linestyle='--', label = 'Diagonalization')
+
+	ymin, ymax = plt.ylim()
+	midpointy = 0.5*(ymax-ymin)
+	deltay = midpointy*0.15
+	xmin, xmax = plt.xlim()
+	midpointx = 0.5*(xmax-xmin)
+	deltax = midpointx*0.15
+	textpositionx = xmin+midpointx-0.25*midpointx
+	textpositiony = ymin+midpointy
+	print(textpositionx)
+	print(textpositiony)
+
+
+	if (variableName == "beta"):
+		plt.xlabel(r'$\mathrm{\beta \ \  (Kelvin^{-1}})$', fontsize = font)
+	if (variableName == "tau"):
+		plt.xlabel(r'$\mathrm{\tau \ \  (Kelvin^{-1}})$', fontsize = font)
+
+	plt.ylabel(r'$\mathrm{\langle P_{A} \rangle}$', fontsize = font)
+	plt.subplots_adjust(top=0.95, bottom=0.30, left=0.25, right=1.0, hspace=0.0, wspace=1.0)
+
+	plt.subplot(1, 2, 2)
 	error1 = err_entropy1
 	plt.errorbar(beta1, entropy1, yerr=error1, color = 'b', ls = '-', label = 'PIGS', linewidth=1)
 	if (variableName == "beta"):
@@ -59,79 +91,33 @@ def	FigureENT(FileToBePlot,FilePlot,TypeCal,variableName,parameter,ExactValue,nu
 
 	if (variableName == "beta"):
 		plt.xlabel(r'$\mathrm{\beta \ \  (Kelvin^{-1}})$', fontsize = font)
-	'''
-		plt.text(textpositionx, textpositiony+0*deltay, 'Parameters:', fontsize=10)
-		plt.text(textpositionx, textpositiony-1*deltay, r'$\mathrm{N} =$'+str(numbmolecules)+" "+molecule, fontsize=10)
-		plt.text(textpositionx, textpositiony-2*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
-		plt.text(textpositionx, textpositiony-3*deltay, r'$\mathrm{\mu} =$'+str(dipolemoment)+"Debye", fontsize=10)
-		plt.text(textpositionx, textpositiony-4*deltay, r'$\mathrm{\tau} =$' +str(parameter) +' '+"K"+r'$^{-1}$', fontsize=10)
-	'''
 	if (variableName == "tau"):
 		plt.xlabel(r'$\mathrm{\tau \ \  (Kelvin^{-1}})$', fontsize = font)
-	'''
-		plt.text(textpositionx, textpositiony+0*deltay, 'Parameters:', fontsize=10)
-		plt.text(textpositionx, textpositiony-1*deltay, r'$\mathrm{N} =$'+str(numbmolecules)+" "+molecule, fontsize=10)
-		plt.text(textpositionx, textpositiony-2*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
-		plt.text(textpositionx, textpositiony-3*deltay, r'$\mathrm{\mu} =$'+str(dipolemoment)+"Debye", fontsize=10)
-		plt.text(textpositionx, textpositiony-4*deltay, r'$\mathrm{\beta} =$' +str(parameter) +' '+"K"+r'$^{-1}$', fontsize=10)
-	'''
-	
-	plt.ylabel(r'$\mathrm{S_{2}}$', fontsize = font)
-
-	plt.subplot(2, 1, 2)
-	error1 = err_entropy1
-	plt.errorbar(beta1, entropy1, yerr=error1, color = 'b', ls = '-', label = 'PIGS', linewidth=1)
-	if (variableName == "beta"):
-		data2        = loadtxt(ExactValue,unpack=True, usecols=[0,2])
-		beta2, entropy2 = data2
-		plt.xlim(0,0.201)
-		plt.plot(beta2, entropy2, color = 'black', ls = '--', label = 'Diagonalization', linewidth=1)
-
-	if (variableName == "tau"):
-		plt.xlim(0,)
-		plt.axhline(y=ExactValue, color='black', lw = 2.0, linestyle='--', label = 'Diagonalization')
-
-	ymin, ymax = plt.ylim()
-	midpointy = 0.5*(ymax-ymin)
-	deltay = midpointy*0.15
-	xmin, xmax = plt.xlim()
-	midpointx = 0.5*(xmax-xmin)
-	deltax = midpointx*0.15
-	textpositionx = xmin+midpointx-0.25*midpointx
-	textpositiony = ymin+midpointy
-	print(textpositionx)
-	print(textpositiony)
-
-
-	if (variableName == "beta"):
-		plt.xlabel(r'$\mathrm{\beta \ \  (Kelvin^{-1}})$', fontsize = font)
-	'''
-		plt.text(textpositionx, textpositiony+0*deltay, 'Parameters:', fontsize=10)
-		plt.text(textpositionx, textpositiony-1*deltay, r'$\mathrm{N} =$'+str(numbmolecules)+" "+molecule, fontsize=10)
-		plt.text(textpositionx, textpositiony-2*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
-		plt.text(textpositionx, textpositiony-3*deltay, r'$\mathrm{\mu} =$'+str(dipolemoment)+"Debye", fontsize=10)
-		plt.text(textpositionx, textpositiony-4*deltay, r'$\mathrm{\tau} =$' +str(parameter) +' '+"K"+r'$^{-1}$', fontsize=10)
-	'''
-	if (variableName == "tau"):
-		plt.xlabel(r'$\mathrm{\tau \ \  (Kelvin^{-1}})$', fontsize = font)
-	'''
-		plt.text(textpositionx, textpositiony+0*deltay, 'Parameters:', fontsize=10)
-		plt.text(textpositionx, textpositiony-1*deltay, r'$\mathrm{N} =$'+str(numbmolecules)+" "+molecule, fontsize=10)
-		plt.text(textpositionx, textpositiony-2*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
-		plt.text(textpositionx, textpositiony-3*deltay, r'$\mathrm{\mu} =$'+str(dipolemoment)+"Debye", fontsize=10)
-		plt.text(textpositionx, textpositiony-4*deltay, r'$\mathrm{\beta} =$' +str(parameter) +' '+"K"+r'$^{-1}$', fontsize=10)
-	'''
 	
 	plt.ylabel(r'$\mathrm{S_{2}}$', fontsize = font)
 
 
-	plt.subplots_adjust(top=0.95, bottom=0.20, left=0.15, right=0.95, hspace=0.6, wspace=1.0)
-	plt.legend(bbox_to_anchor=(0.60, 0.40), loc=2, borderaxespad=0., shadow=True, fontsize = font)
+	plt.subplots_adjust(top=0.95, bottom=0.10, left=0.15, right=0.90, hspace=0.0, wspace=0.2)
+	plt.legend(bbox_to_anchor=(0.30, 0.40), loc=2, borderaxespad=0., shadow=True, fontsize = font)
 	plt.savefig(outfile, dpi = 200, format = 'pdf')
 
 	call(["open", outfile])
 	#call(["okular", outfile])
 	#plt.show()
+	'''
+		plt.text(textpositionx, textpositiony+0*deltay, 'Parameters:', fontsize=10)
+		plt.text(textpositionx, textpositiony-1*deltay, r'$\mathrm{N} =$'+str(numbmolecules)+" "+molecule, fontsize=10)
+		plt.text(textpositionx, textpositiony-2*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
+		plt.text(textpositionx, textpositiony-3*deltay, r'$\mathrm{\mu} =$'+str(dipolemoment)+"Debye", fontsize=10)
+		plt.text(textpositionx, textpositiony-4*deltay, r'$\mathrm{\tau} =$' +str(parameter) +' '+"K"+r'$^{-1}$', fontsize=10)
+	'''
+	'''
+		plt.text(textpositionx, textpositiony+0*deltay, 'Parameters:', fontsize=10)
+		plt.text(textpositionx, textpositiony-1*deltay, r'$\mathrm{N} =$'+str(numbmolecules)+" "+molecule, fontsize=10)
+		plt.text(textpositionx, textpositiony-2*deltay, r'$\mathrm{R} =$'+str(Rpt)+r'$\mathrm{\AA}$', fontsize=10)
+		plt.text(textpositionx, textpositiony-3*deltay, r'$\mathrm{\mu} =$'+str(dipolemoment)+"Debye", fontsize=10)
+		plt.text(textpositionx, textpositiony-4*deltay, r'$\mathrm{\beta} =$' +str(parameter) +' '+"K"+r'$^{-1}$', fontsize=10)
+	'''
 
 def	FigureCorrelationPIGS(FileToBePlot,FilePlot,TypeCorr,variableName,parameter,numbmolecules,molecule,Rpt,dipolemoment,RefPoint):
 	outfile = FilePlot

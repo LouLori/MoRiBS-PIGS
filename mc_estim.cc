@@ -1235,6 +1235,23 @@ void GetDensities(void)
 		}
 	}
 }
+
+void GetDensitiesEndBeads(void)
+{
+    const char *_proc_=__func__; //  GetPotEnergy_Densities()
+
+    if ( (MCAtom[IMTYPE].molecule == 4) && (MCAtom[IMTYPE].numb == 1) )
+    {
+        int atom0 = 0;
+       	int t0 = 0 + atom0*NumbTimes;
+       	int tp = (NumbTimes-1) + atom0*NumbTimes;
+       	for (int id=0;id<NDIM;id++)
+       	{
+           	double r = (MCCoords[id][t0] + MCCoords[id][tp])/BOHRRADIUS;
+           	bin_1Ddensity (r,id);    // densities
+		}
+    }
+}
 #endif
 
 double GetTotalEnergy(void)
