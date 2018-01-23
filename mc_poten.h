@@ -41,5 +41,8 @@ extern double   Rvmax; // maximum radius for 3D potential extrapolation
 extern double   Rvmin; // minimum radius for 3D potential extrapolation
 extern double   Rvstep; // radial increment for 3D potential extrapolation
 
+#ifdef PAIRDENSITY
+void readPairDensity();
+#endif
 //--------------------------------------------------
 #endif  // mc_poten.h

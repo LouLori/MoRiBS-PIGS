@@ -120,28 +120,8 @@ void MCMolecularMoveGauss(int type)
     		//#pragma omp parallel for
     		for (int it = 0; it < NumbTimes; it++)
     		{ 
-       			newcoords[id][offset+it]  =  gausscoords[id][offset+it];
+   				MCCoords[id][offset+it] = gausscoords[id][offset+it];
 
-    			double deltav = 0.0;         // ACCEPT/REJECT
-    
-#ifndef POTZERO
-    			deltav += (PotEnergy(gatom,newcoords)-PotEnergy(gatom,MCCoords));
-#endif
-
-    			bool Accepted = false;
-
-    			if (deltav<0.0)             Accepted = true;
-    			else if
-    			(exp(-deltav*MCTau)>rnd2()) Accepted = true;
-
-    			MCTotal[type][MCMOLEC] += 1.0;  
-      
-    			if (Accepted)
-    			{
-       				MCAccep[type][MCMOLEC] += 1.0; 
-
-       				MCCoords[id][offset+it] = newcoords[id][offset+it];
-				}
        		}
     	}
   	}
@@ -604,8 +584,12 @@ void MCRotationsMove(int type) // update all time slices for rotational degrees 
 			MCRotLinStepPIGS(itrot,offset,gatom,type,step,rand1,rand2,rand3,MCRotChunkTot,MCRotChunkAcp);
 #endif
 //
+#ifdef PIGSENTTYPE
 #ifdef SWAPTOUNSWAP
 			MCRotLinStepSwap(itrot,offset,gatom,type,step,rand1,rand2,rand3,MCRotChunkTot,MCRotChunkAcp,Distribution);
+#else
+			MCRotLinStepSwapBroken(itrot,offset,gatom,type,step,rand1,rand2,rand3,MCRotChunkTot,MCRotChunkAcp);
+#endif
 #endif
 		}
 	}
@@ -634,8 +618,12 @@ void MCRotationsMove(int type) // update all time slices for rotational degrees 
 			MCRotLinStepPIGS(itrot,offset,gatom,type,step,rand1,rand2,rand3,MCRotChunkTot,MCRotChunkAcp);
 #endif
 //
+#ifdef PIGSENTTYPE
 #ifdef SWAPTOUNSWAP
 			MCRotLinStepSwap(itrot,offset,gatom,type,step,rand1,rand2,rand3,MCRotChunkTot,MCRotChunkAcp,Distribution);
+#else
+			MCRotLinStepSwapBroken(itrot,offset,gatom,type,step,rand1,rand2,rand3,MCRotChunkTot,MCRotChunkAcp);
+#endif
 #endif
 		}
 	}
@@ -647,8 +635,18 @@ void MCRotationsMove(int type) // update all time slices for rotational degrees 
     //double rand4 = (double)rand() / ((double)RAND_MAX + 1);
     double rand4 = runif(Rng);
     MCSwap(rand4, Distribution);
-    if (Distribution == "Swap") MCAccepSwap += 1;
-    else MCAccepUnSwap += 1;
+    if (Distribution == "Swap") 
+	{
+		MCAccepSwap += 1;
+		iSwap = 1;
+		iUnSwap = 0;
+	}
+    else
+	{
+		MCAccepUnSwap += 1;
+		iSwap = 0;
+		iUnSwap = 1;
+	}
 #endif
 }
 
@@ -2136,8 +2134,7 @@ void MCRotLinStep(int it1,int offset,int gatom,int type,double step,double rand1
 }
 #endif
 
-#ifdef IOWRITE
-void MCRotLinStep(int it1,int offset,int gatom,int type,double step,double rand1,double rand2,double rand3,double &MCRotChunkTot,double &MCRotChunkAcp)
+void MCRotLinStepSwapBroken(int it1,int offset,int gatom,int type,double step,double rand1,double rand2,double rand3,double &MCRotChunkTot,double &MCRotChunkAcp)
 {
 	int it0 = (it1 - 1);
 	int it2 = (it1 + 1);
@@ -2151,26 +2148,23 @@ void MCRotLinStep(int it1,int offset,int gatom,int type,double step,double rand1
 
    	double cost = MCAngles[CTH][t1];
    	double phi  = MCAngles[PHI][t1];
+
 	double EulangOld[NDIM], EulangNew[NDIM];
 	EulangOld[PHI] = phi;
 	EulangOld[CTH] = acos(cost);
 	EulangOld[CHI] = 0.0;
 
-// 	cost += (step*(rnd1()-0.5));
-// 	phi  += (step*(rnd1()-0.5));
    	cost += (step*(rand1-0.5));
    	phi  += (step*(rand2-0.5));
 
    	if (cost >  1.0)
    	{
       	cost = 2.0 - cost;
-//    	phi  = phi + M_PI;
    	}
 
    	if (cost < -1.0)
    	{
        	cost = -2.0 - cost;
-//     	phi  = phi  + M_PI;
    	}
 
 	if (abs(cost) > 2.0) 
@@ -2203,116 +2197,96 @@ void MCRotLinStep(int it1,int offset,int gatom,int type,double step,double rand1
    	}
 
    	double dens_old;
-   	double rho1,rho2,erot;
 // 	If it1 = 0 (the first bead), dens_new = SRotDens(p1,type)
 // 	if it1 = (NumbRotTimes-1) is the last bead, dens_new = SRotDens(p0,type)
-#ifdef ENTANGLEMENT
    	int particleA1Min = (NumbAtoms/2) - NumbParticle;
    	int particleA1Max = particleA1Min + NumbParticle - 1;
    	int particleA2Min = particleA1Max + 1;
    	int particleA2Max = particleA2Min + NumbParticle - 1;
-#endif
 
-	if(RotDenType == 0)
-	{
-#ifdef PIGSTYPE
-        if (it1 == 0 || it1 == (NumbRotTimes - 1))
+    if (it1 == 0 || it1 == (NumbRotTimes - 1))
+    {
+        if (it1 == 0)
         {
-            if (it1 == 0)
-            {
-                dens_old = SRotDens(p1, type);
-            }
-            else
-            {
-                dens_old = SRotDens(p0, type);
-            }
+            dens_old = SRotDens(p1, type);
         }
         else
         {
-            dens_old = SRotDens(p0,type)*SRotDens(p1,type);
+            dens_old = SRotDens(p0, type);
         }
-#ifndef REGULARPATH
-#ifdef ENTANGLEMENT
+    }
+    else
+    {
+        dens_old = SRotDens(p0,type)*SRotDens(p1,type);
+    }
 #ifdef BROKENPATH
-        if ((gatom >= particleA1Min) && (gatom <= particleA2Max))
+    if ((gatom >= particleA1Min) && (gatom <= particleA2Max))
+    {
+        if (it1 == (((NumbRotTimes - 1)/2) - 1))
         {
-            if (it1 == (((NumbRotTimes - 1)/2) - 1))
-            {
-                dens_old = SRotDens(p0,type);
-            }
-            if (it1 == ((NumbRotTimes - 1)/2))
-            {
-                dens_old = SRotDens(p1,type);
-            }
+            dens_old = SRotDens(p0,type);
         }
+        if (it1 == ((NumbRotTimes - 1)/2))
+        {
+            dens_old = SRotDens(p1,type);
+        }
+    }
 #endif
 #ifdef SWAP
-        if ((gatom >= particleA1Min) && (gatom <= particleA1Max))
-        {
-           	int gatomSwap = particleA2Max - (gatom - particleA1Min);
-            int offsetSwap = NumbRotTimes*gatomSwap;
-
-            if (it1 == (((NumbRotTimes - 1)/2) - 1))
-            {
-            	int tSwap = offsetSwap + it2;
-				double pSwap = 0.0;
-            	for (int id = 0; id < NDIM; id++)
-            	{
-                	pSwap += (MCCosine[id][t1]*MCCosine[id][tSwap]);
-            	}
-                dens_old = SRotDens(p0,type)*SRotDens(pSwap,type);
-            }
-            if (it1 == ((NumbRotTimes - 1)/2))
-            {
-            	int tSwap = offsetSwap + it0;
-				double pSwap = 0.0;
-            	for (int id = 0; id < NDIM; id++)
-            	{
-                	pSwap += (MCCosine[id][tSwap]*MCCosine[id][t1]);
-            	}
-                dens_old = SRotDens(pSwap,type)*SRotDens(p1,type);
-            }
-        }
-
-        if ((gatom >= particleA2Min) && (gatom <= particleA2Max))
-        {
-            int gatomSwap = particleA1Max - (gatom - particleA2Min);
-            int offsetSwap = NumbRotTimes*gatomSwap;
-
-            if (it1 == (((NumbRotTimes - 1)/2) - 1))
-            {
-            	int tSwap = offsetSwap + it2;
-				double pSwap = 0.0;
-            	for (int id = 0; id < NDIM; id++)
-            	{
-                	pSwap += (MCCosine[id][t1]*MCCosine[id][tSwap]);
-            	}
-                dens_old = SRotDens(p0,type)*SRotDens(pSwap,type);
-            }
-            if (it1 == ((NumbRotTimes - 1)/2))
-            {
-            	int tSwap = offsetSwap + it0;
-				double pSwap = 0.0;
-            	for (int id = 0; id < NDIM; id++)
-            	{
-                	pSwap += (MCCosine[id][tSwap]*MCCosine[id][t1]);
-            	}
-                dens_old = SRotDens(pSwap,type)*SRotDens(p1,type);
-            }
-        }
-#endif
-#endif
-#endif
-#else
-        dens_old = SRotDens(p0,type)*SRotDens(p1,type);
-#endif
-	}
-    else if(RotDenType == 1)
+    if ((gatom >= particleA1Min) && (gatom <= particleA1Max))
     {
-        rsline_(&X_Rot,&p0,&MCRotTau,&rho1,&erot);
-        rsline_(&X_Rot,&p1,&MCRotTau,&rho2,&erot);
-        dens_old = rho1+rho2;
+       	int gatomSwap = particleA2Max - (gatom - particleA1Min);
+        int offsetSwap = NumbRotTimes*gatomSwap;
+
+        if (it1 == (((NumbRotTimes - 1)/2) - 1))
+        {
+          	int tSwap = offsetSwap + it2;
+			double pSwap = 0.0;
+           	for (int id = 0; id < NDIM; id++)
+           	{
+               	pSwap += (MCCosine[id][t1]*MCCosine[id][tSwap]);
+           	}
+            dens_old = SRotDens(p0,type)*SRotDens(pSwap,type);
+        }
+        if (it1 == ((NumbRotTimes - 1)/2))
+        {
+          	int tSwap = offsetSwap + it0;
+			double pSwap = 0.0;
+           	for (int id = 0; id < NDIM; id++)
+           	{
+               	pSwap += (MCCosine[id][tSwap]*MCCosine[id][t1]);
+           	}
+            dens_old = SRotDens(pSwap,type)*SRotDens(p1,type);
+        }
     }
+
+    if ((gatom >= particleA2Min) && (gatom <= particleA2Max))
+    {
+        int gatomSwap = particleA1Max - (gatom - particleA2Min);
+        int offsetSwap = NumbRotTimes*gatomSwap;
+
+        if (it1 == (((NumbRotTimes - 1)/2) - 1))
+        {
+          	int tSwap = offsetSwap + it2;
+			double pSwap = 0.0;
+           	for (int id = 0; id < NDIM; id++)
+           	{
+               	pSwap += (MCCosine[id][t1]*MCCosine[id][tSwap]);
+           	}
+            dens_old = SRotDens(p0,type)*SRotDens(pSwap,type);
+        }
+        if (it1 == ((NumbRotTimes - 1)/2))
+        {
+          	int tSwap = offsetSwap + it0;
+			double pSwap = 0.0;
+           	for (int id = 0; id < NDIM; id++)
+           	{
+               	pSwap += (MCCosine[id][tSwap]*MCCosine[id][t1]);
+           	}
+            dens_old = SRotDens(pSwap,type)*SRotDens(p1,type);
+        }
+	}
+#endif
 
    if (fabs(dens_old)<RZERO) dens_old = 0.0;
 #ifndef NEGATIVEDENSITY
@@ -2330,7 +2304,7 @@ void MCRotLinStep(int it1,int offset,int gatom,int type,double step,double rand1
    	for (int it=itr0;it<itr1;it++)  // average over tr time slices
 	{
    		//pot_old  += (PotRotEnergy(gatom,MCCosine,it));
-   		pot_old  += (PotRotEnergy(gatom,EulangOld,it));
+   		pot_old  += (PotRotEnergySwapBroken(gatom,EulangOld,it));
 	}
 
 // the new density 
@@ -2347,38 +2321,33 @@ void MCRotLinStep(int it1,int offset,int gatom,int type,double step,double rand1
 
    double dens_new;
 
-	if(RotDenType == 0)
-	{
-#ifdef PIGSTYPE
-        if ((it1 == 0) || (it1 == (NumbRotTimes - 1)))
-        {
-            if (it1 == 0)
-            {
-                dens_new = SRotDens(p1, type);
-            }
-            else
-            {
-                dens_new = SRotDens(p0, type);
-            }
-        }
-        else
-        {
-            dens_new = SRotDens(p0,type)*SRotDens(p1,type);
-        }
-#ifndef REGULARPATH
-#ifdef ENTANGLEMENT
+   if ((it1 == 0) || (it1 == (NumbRotTimes - 1)))
+   {
+       if (it1 == 0)
+       {
+           dens_new = SRotDens(p1, type);
+       }
+       else
+       {
+           dens_new = SRotDens(p0, type);
+       }
+    }
+    else
+    {
+        dens_new = SRotDens(p0,type)*SRotDens(p1,type);
+    }
 #ifdef BROKENPATH
-        if ((gatom >= particleA1Min) && (gatom <= particleA2Max))
+    if ((gatom >= particleA1Min) && (gatom <= particleA2Max))
+    {
+        if (it1 == (((NumbRotTimes - 1)/2) - 1))
         {
-            if (it1 == (((NumbRotTimes - 1)/2) - 1))
-            {
-                dens_new = SRotDens(p0,type);
-            }
-            if (it1 == ((NumbRotTimes - 1)/2))
-            {
-                dens_new = SRotDens(p1,type);
-            }
+            dens_new = SRotDens(p0,type);
         }
+        if (it1 == ((NumbRotTimes - 1)/2))
+        {
+            dens_new = SRotDens(p1,type);
+        }
+    }
 #endif
 #ifdef SWAP
         if ((gatom >= particleA1Min) && (gatom <= particleA1Max))
@@ -2435,18 +2404,6 @@ void MCRotLinStep(int it1,int offset,int gatom,int type,double step,double rand1
             }
         }
 #endif
-#endif
-#endif
-#else
-        dens_new = SRotDens(p0,type)*SRotDens(p1,type);
-#endif
-	}
-	else if(RotDenType == 1)
-	{
-		rsline_(&X_Rot,&p0,&MCRotTau,&rho1,&erot);
-		rsline_(&X_Rot,&p1,&MCRotTau,&rho2,&erot);
-		dens_new = rho1 + rho2;
-	}
 
 	if (fabs(dens_new)<RZERO) dens_new = 0.0;
 #ifndef NEGATIVEDENSITY
@@ -2460,38 +2417,19 @@ void MCRotLinStep(int it1,int offset,int gatom,int type,double step,double rand1
 	for (int it=itr0;it<itr1;it++)  // average over tr time slices
 	{
 		//pot_new  += (PotRotEnergy(gatom,newcoords,it));
-		pot_new  += (PotRotEnergy(gatom,EulangNew,it));
+		pot_new  += (PotRotEnergySwapBroken(gatom,EulangNew,it));
 	}
 
 	double rd;
+	if (dens_old>RZERO)
+		rd = dens_new/dens_old;
+	else rd = 1.0;
 
-	if(RotDenType == 0)
-	{
-		if (dens_old>RZERO)
-			rd = dens_new/dens_old;
-		else rd = 1.0;
-
-		rd *= exp(- MCTau*(pot_new-pot_old));
-	}
-	else if(RotDenType == 1)
-	{
-		rd = dens_new - dens_old - MCTau*(pot_new-pot_old);
-		//rd = exp(rd);
-	}
+	rd *= exp(- MCTau*(pot_new-pot_old));
 
 	bool Accepted = false;
-	if(RotDenType == 0)
-	{
-		if (rd>1.0)         Accepted = true;
-		//else if (rd>rnd7()) Accepted = true;
-		else if (rd>rand3) Accepted = true;
-	}
-	else if (RotDenType == 1)
-	{
-		if (rd > 0.0)   Accepted = true;
-		//else if (rd > log(rnd7())) Accepted = true;
-    	else if (rd > log(rand3)) Accepted = true;
-	}
+	if (rd>1.0)         Accepted = true;
+	else if (rd>rand3) Accepted = true;
 
 	MCRotChunkTot += 1.0;
 
@@ -2505,11 +2443,120 @@ void MCRotLinStep(int it1,int offset,int gatom,int type,double step,double rand1
 		for (int id=0;id<NDIM;id++)
     		MCCosine[id][t1] = newcoords[id][t1];
 	}
-
 }
+
+//double PotRotEnergy(int atom0, double **cosine, int it)   
+double PotRotEnergySwapBroken(int atom0, double *Eulang0, int it)   
+{
+	int type0   =  MCType[atom0];
+	double spot, spotSwap;
+
+    double weight, weight1;
+	weight = 1.0;
+
+    if (it == 0 || it == (NumbRotTimes - 1)) weight = 0.5;
+
+	if ( (MCAtom[type0].molecule == 4) && (MCAtom[type0].numb > 1) )
+	{
+	    int offset0 =  atom0*NumbRotTimes;
+        int t0  = offset0 + it;
+
+		int atom1Init, NumbAtoms1;
+   	    int particleA1Min = (NumbAtoms/2) - NumbParticle;
+   	    int particleA1Max = particleA1Min + NumbParticle - 1;
+   	    int particleA2Min = particleA1Max + 1;
+   	    int particleA2Max = particleA2Min + NumbParticle - 1;
+
+        if (atom0 <= particleA1Max)
+        {
+            atom1Init  = 0;
+            NumbAtoms1 = (particleA1Max+1);
+        }
+        else
+        {
+            atom1Init  = particleA2Min;
+            NumbAtoms1 = NumbAtoms;
+        }
+
+        spot = 0.0;
+        for (int atom1 = atom1Init; atom1 < NumbAtoms1; atom1++)
+        if (atom1 != atom0)                    
+        {
+            int offset1 = atom1*NumbRotTimes;
+            int t1  = offset1 + it;
+
+	        string stype = MCAtom[type0].type;
+		    if (stype == HF )
+            {
+				double Eulang1[NDIM];
+				Eulang1[PHI] = MCAngles[PHI][t1];
+                Eulang1[CTH] = acos(MCAngles[CTH][t1]);
+                Eulang1[CHI] = 0.0;
+
+				weight1 = 1.0;
+				if (((atom0 < particleA1Min) || (atom0 > particleA2Max)) && ((atom1 >= particleA1Min) && (atom1 <= particleA2Max)))
+            	{
+           			if (it == ((NumbRotTimes - 1)/2))
+              		{
+                   		weight1 = 0.5;
+					}
+            	} 
+            	if (((atom0 >= particleA1Min) && (atom0 <= particleA2Max)) && ((atom1 < particleA1Min) || (atom1 > particleA2Max)))
+            	{
+            		if (it == ((NumbRotTimes - 1)/2))
+               		{
+                   		weight1 = 0.5;
+					}
+            	} 
+        		spot += weight*weight1*PotFunc(atom0, atom1, Eulang0, Eulang1, it);
+            }  //stype
+        } //loop over atom1 (molecules)
+		spotSwap = 0.0;
+#ifdef SWAP
+		if (it == ((NumbRotTimes - 1)/2))
+		{
+			int atomSwapMin, atomSwapMax;
+			if (atom0 < particleA1Min)
+    	   	{
+				atomSwapMin = particleA2Min;
+                atomSwapMax = (particleA2Max + 1);
+			}
+			if (atom0 > particleA2Max)
+    	   	{
+				atomSwapMin = particleA1Min;
+                atomSwapMax = (particleA1Max + 1);
+			}
+	    	if ((atom0 >= particleA1Min) && (atom0 <= particleA1Max))
+       	    {
+			    atomSwapMin = (particleA2Max + 1);
+                atomSwapMax = NumbAtoms;
+		    }
+     		if ((atom0 >= particleA2Min) && (atom0 <= particleA2Max))
+         	{
+	     		atomSwapMin = 0;
+                atomSwapMax = particleA1Min;
+		    }
+			spotSwap = 0.0;
+     		for (int atomSwap = atomSwapMin; atomSwap < atomSwapMax; atomSwap++)
+	    	{
+                int offsetSwap = NumbRotTimes*atomSwap;
+                int tSwap  = offsetSwap + it;
+	        	string stype = MCAtom[type0].type;
+                if (stype == HF )
+                {
+					double EulangSwap[NDIM];
+					EulangSwap[PHI] = MCAngles[PHI][tSwap];
+        			EulangSwap[CTH] = acos(MCAngles[CTH][tSwap]);
+        			EulangSwap[CHI] = 0.0;
+        			spotSwap += 0.5*PotFunc(atom0, atomSwap, Eulang0, EulangSwap, it);
+                }  //stype
+		    }
+        }
 #endif
-
-
+    }
+	double spotReturn = (spot + spotSwap);
+    return spotReturn;
+}
 void MCRot3Dstep(int it1, int offset, int gatom, int type, double step,double rand1,double rand2,double rand3,double rand4,int IROTSYM, int NFOLD_ROT,double &MCRotChunkTot,double &MCRotChunkAcp)
 {
       int it0 = (it1 - 1);
@@ -3706,6 +3753,7 @@ double PotEnergy(int atom0, double **pos, int it)
    	return (spot);
 }
 
+#ifdef IOWRITE
 //double PotRotEnergy(int atom0, double **cosine, int it)   
 double PotRotEnergy(int atom0, double *Eulang0, int it)   
 //  Orientational energy 
@@ -3977,6 +4025,7 @@ double PotRotEnergy(int atom0, double *Eulang0, int it)
 	double spotReturn = (spot + spotSwap + spot_cage);
     return spotReturn;
 }
+#endif
 
 double PotRotE3D(int atom0,double * Eulang,int it)   
 //  Orientational energy 

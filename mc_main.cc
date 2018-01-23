@@ -52,6 +52,7 @@ void MCGetAveragePIGSENT(void);
 void MCResetBlockAveragePIGSENT(void);
 
 void MCSaveBlockAverages(long int);
+void MCSaveBlockAveragesPIGSENT(long int);
 
 void MCSaveAcceptRatio(long int,long int,long int);
 
@@ -111,8 +112,10 @@ fstream _feng;      // save accumulated energy
 fstream _fang;      // save accumulated energy
 fstream _fdc;      // save accumulated energy
 fstream _fangins;      // save accumulated energy
+fstream _fanginsc;      // save accumulated energy
 fstream _fengins;      // save accumulated energy
 fstream _fentropy;
+fstream _fswap;
 
 //---------------- ESTIMATORS ---------------
 
@@ -122,8 +125,10 @@ void SaveSumEnergy (double,double);                 // accumulated average
 void SaveInstantAngularDOF(long int); 
 void SaveInstantEnergy ();                 // accumulated average
 
+#ifdef DDCORR
 void SaveDipoleCorr(const char [],double,long int);
 void SaveSumDipoleCorr(double,double);              // accumulated average
+#endif
 void SaveAngularDOF(const char [],double,long int);
 void SaveSumAngularDOF(double,double);              // accumulated average
 void SaveTrReducedDens(const char [], double , long int );
@@ -143,21 +148,26 @@ extern "C" void prtper_(int *PIndex,int *NBoson,long int *blockCount);
 //----------- subroutine that performs some initialization work for vh2h2.f-----
 
 extern "C" void vinit_();
-#ifdef SWAPTOUNSWAP
-  	string Distribution = "unSwap";
-	double MCAccepSwap;
-	double MCAccepUnSwap;
-#endif
+string Distribution = "unSwap";
+double MCAccepSwap;
+double MCAccepUnSwap;
+int iSwap;
+int iUnSwap;
+void SaveInstantSwap(double, double, long int);                 // accumulated average
 #ifdef PROPOSED
-	int iChooseOld = 0;
-	int iChooseNew;
-	int iChoose;
+int iChooseOld = 0;
+int iChooseNew;
+int iChoose;
 #endif
 
 //-------------------------------------------
 
 int main(int argc, char *argv[])
 {
+#ifdef PAIRDENSITY
+	readPairDensity();
+	exit(11);
+#endif
    	randomseed(); //set seed according to clock
 //Tapas added
 #ifdef SWAPTOUNSWAP
@@ -238,7 +248,7 @@ ParamsPotential();
 //--------------------------------------------------------
 //    	generate tables - potentals, configurations etc, status
 
-//    	MCStartBlock = 0; 
+	   	MCStartBlock = 0; 
 //    	SEED for head CPU
       	SEED = 985456376;
       	RandomInit(MPIrank,MPIsize);
@@ -542,8 +552,13 @@ ParamsPotential();
 #ifdef IOWRITE
             SaveInstantEnergy (); 
 #endif
-			if (blockCount > 9000)
-		    SaveInstantAngularDOF(totalStep);
+			if (blockCount > (NumberOfMCBlocks - 10))
+			{
+		    	SaveInstantAngularDOF(totalStep);
+#ifdef SWAPTOUNSWAP
+	    		SaveInstantSwap(iUnSwap, iSwap, totalStep);
+#endif
+			}
 #endif
 
    			if (blockCount>NumberOfEQBlocks)        // skip equilibration steps
@@ -616,21 +631,11 @@ ParamsPotential();
               	if (passTotal % MCSKIP_TOTAL == 0 && avergCount)  
               	{
                		sumsCount += 1.0;                 
-#ifdef PIMCTYPE
-               		SaveSumEnergy (totalCount,sumsCount);
-#endif
-//
-#ifdef PIGSTYPE
-               		SaveSumEnergy (totalCount,sumsCount);
-					SaveSumAngularDOF(totalCount, sumsCount);
-					SaveSumDipoleCorr(totalCount, sumsCount);
-#endif
-//
 #ifdef PIGSENTTYPE
+               		SaveSumEnergy (totalCountENT,sumsCount);
                     SaveSumTrReducedDens(totalCount, sumsCount);
-#ifdef PIGSENTBOTH
-           			SaveSumEnergy (totalCountENT,sumsCount);
-#endif
+#else
+               		SaveSumEnergy (totalCount,sumsCount);
 #endif
             	}
 			}  
@@ -643,9 +648,17 @@ ParamsPotential();
 
 		if (blockCount>NumberOfEQBlocks && avergCount)   // skip equilibration steps
 		{
+#ifdef PIGSENTTYPE
+   			MCSaveBlockAveragesPIGSENT(blockCount);
+#else
    			MCSaveBlockAverages(blockCount);
-
+#endif
 			// save accumulated interatomic distribution
+
+#ifdef HISTOGRAM
+			if (blockCount > 1500)
+			SaveGxyzSum(MCFileName.c_str(),totalCount);
+#endif
 #ifdef NEWDENSITY
 			if (blockCount > 600)
 			SaveGraSum(MCFileName.c_str(),totalCount);
@@ -769,6 +782,27 @@ void MCResetBlockAveragePIMC(void)
 	PrintYrfl   = 1;
 	PrintXrfl   = 1;
 	PrintZrfl   = 1;
+#ifdef DDCORR
+	int NDIMDP = NumbAtoms*(NumbAtoms+1)/2;
+    _cdipoleXYZ.resize(NDIMDP);
+    _cdipoleX.resize(NDIMDP);
+    _cdipoleY.resize(NDIMDP);
+    _cdipoleZ.resize(NDIMDP);
+  	_cdipoleXY.resize(NDIMDP);
+	
+	for (int idp = 0; idp < NDIMDP; idp++)
+	{
+        _cdipoleXYZ[idp] = 0.0;
+        _cdipoleX[idp] = 0.0;
+        _cdipoleY[idp] = 0.0;
+        _cdipoleZ[idp] = 0.0;
+    	_cdipoleXY[idp] = 0.0;
+	}
+#endif
+	_bcostheta = 0.0;
+	_ucompx     = 0.0;
+	_ucompy     = 0.0;
+	_ucompz     = 0.0;
 }
 #endif
 
@@ -790,7 +824,7 @@ void MCResetBlockAveragePIGS(void)
 	_ucompy     = 0.0;
 	_ucompz     = 0.0;
 #ifdef DDCORR
-	int NDIMDP = NumbAtoms*(NumbAtoms-1)/2;
+	int NDIMDP = NumbAtoms*(NumbAtoms+1)/2;
     _cdipoleXYZ.resize(NDIMDP);
     _cdipoleX.resize(NDIMDP);
     _cdipoleY.resize(NDIMDP);
@@ -852,7 +886,7 @@ void MCResetBlockAveragePIGSENT(void)
     _ucompz     = 0.0;
 #ifdef DDCORR
 	int NumbAtoms1 = NumbAtoms/2;
-    int NDIMDP = NumbAtoms1*(NumbAtoms1-1)/2;
+	int NDIMDP = NumbAtoms1*(NumbAtoms1+1)/2;
     _cdipoleXYZ.resize(NDIMDP);
     _cdipoleX.resize(NDIMDP);
     _cdipoleY.resize(NDIMDP);
@@ -901,7 +935,7 @@ void MCGetAveragePIGSENT(void)
 	_trOfDensitySq   += sdm/snm;
 	_trOfDensitySq_total += sdm/snm;
 #endif
-#ifdef REGULARPATH
+#ifdef UNSWAP
 	_trOfDensitySq   += snm/sdm;
 	_trOfDensitySq_total += snm/sdm;
 #endif
@@ -910,6 +944,7 @@ void MCGetAveragePIGSENT(void)
 	{
 		avergCountENT    += 1.0;
 		totalCountENT    += 1.0;  
+
 		double spot       = GetPotEnergyPIGSENT();//GetPotEnergyPIGS(); // pot energy and density distributions
 		_bpot            += spot;                     // block average for pot energy
 		_pot_total       += spot;
@@ -943,7 +978,7 @@ void MCGetAveragePIGSENT(void)
 		_ucompz_total    += scompz;
 #ifdef DDCORR
 		int NumbAtoms1 = NumbAtoms/2;
-		int NDIMDP = NumbAtoms1*(NumbAtoms1-1)/2;
+		int NDIMDP = NumbAtoms1*(NumbAtoms1+1)/2;
     	double DipoleCorrXYZ[NDIMDP];
     	double DipoleCorrX[NDIMDP];
     	double DipoleCorrY[NDIMDP];
@@ -1058,10 +1093,6 @@ void MCGetAveragePIGS(void)
 	avergCount       += 1.0;
 	totalCount       += 1.0;  
 
-#ifdef NEWDENSITY
-	GetDensities();
-	GetDensitiesEndBeads();
-#endif
 	double spot       = GetPotEnergyPIGS(); // pot energy and density distributions
 	_bpot            += spot;                     // block average for pot energy
 	_pot_total       += spot;
@@ -1078,7 +1109,7 @@ void MCGetAveragePIGS(void)
 	compxyz[1] = 0.0;
 	compxyz[2] = 0.0;
 
-	GetCosTheta(cosTheta, compxyz);
+	GetCosThetaPIGS(cosTheta, compxyz);
 	double scostheta  = cosTheta;
 	double scompx     = compxyz[0];
 	double scompy     = compxyz[1];
@@ -1095,7 +1126,7 @@ void MCGetAveragePIGS(void)
 	_ucompz_total    += scompz;
 
 #ifdef DDCORR
-	int NDIMDP = NumbAtoms*(NumbAtoms-1)/2;
+	int NDIMDP = NumbAtoms*(NumbAtoms+1)/2;
     double DipoleCorrXYZ[NDIMDP];
     double DipoleCorrX[NDIMDP];
     double DipoleCorrY[NDIMDP];
@@ -1111,7 +1142,7 @@ void MCGetAveragePIGS(void)
 		DipoleCorrXY[idp]  = 0.0;
 	}
 
-	GetDipoleCorrelation(DipoleCorrXYZ, DipoleCorrX, DipoleCorrY, DipoleCorrZ, DipoleCorrXY);
+	GetDipoleCorrelationPIGS(DipoleCorrXYZ, DipoleCorrX, DipoleCorrY, DipoleCorrZ, DipoleCorrXY);
 
 	for (int idp = 0; idp < NDIMDP; idp++)
 	{
@@ -1208,6 +1239,9 @@ void MCGetAveragePIMC(void)
 {
 	avergCount       += 1.0;
 	totalCount       += 1.0;  
+#ifdef HISTOGRAM
+	GetDensities();
+#endif
 
     double skin       = 0.;
 #ifdef MOVECOM
@@ -1220,9 +1254,62 @@ void MCGetAveragePIMC(void)
 	_bpot            += spot;                     // block average for pot energy
 	_pot_total       += spot;
 
-	double stotal     = skin + spot;
-	_btotal          += stotal;                   // kin+pot
-	_total           += stotal;
+
+    double cosTheta   = 0.0;
+    double compxyz[NDIM];
+    compxyz[0] = 0.0;
+    compxyz[1] = 0.0;
+    compxyz[2] = 0.0;
+
+    GetCosThetaPIMC(cosTheta, compxyz);
+    double scostheta  = cosTheta;
+    double scompx     = compxyz[0];
+    double scompy     = compxyz[1];
+    double scompz     = compxyz[2];
+
+    _bcostheta       += scostheta;
+    _costheta_total  += scostheta;
+
+    _ucompx          += scompx;
+    _ucompy          += scompy;
+    _ucompz          += scompz;
+    _ucompx_total    += scompx;
+    _ucompy_total    += scompy;
+    _ucompz_total    += scompz;
+
+#ifdef DDCORR
+	int NDIMDP = NumbAtoms*(NumbAtoms+1)/2;
+    double DipoleCorrXYZ[NDIMDP];
+    double DipoleCorrX[NDIMDP];
+    double DipoleCorrY[NDIMDP];
+    double DipoleCorrZ[NDIMDP];
+    double DipoleCorrXY[NDIMDP];
+
+    for (int idp = 0; idp < NDIMDP; idp++)
+    {
+        DipoleCorrXYZ[idp] = 0.0;
+        DipoleCorrX[idp]   = 0.0;
+        DipoleCorrY[idp]   = 0.0;
+        DipoleCorrZ[idp]   = 0.0;
+        DipoleCorrXY[idp]  = 0.0;
+    }
+
+    GetDipoleCorrelationPIMC(DipoleCorrXYZ, DipoleCorrX, DipoleCorrY, DipoleCorrZ, DipoleCorrXY);
+
+    for (int idp = 0; idp < NDIMDP; idp++)
+    {
+        _cdipoleXYZ[idp] += DipoleCorrXYZ[idp];
+        _cdipoleX[idp]   += DipoleCorrX[idp];
+        _cdipoleY[idp]   += DipoleCorrY[idp];
+        _cdipoleZ[idp]   += DipoleCorrZ[idp];
+        _cdipoleXY[idp]  += DipoleCorrXY[idp];
+        _cdipoleXYZ_total[idp] += DipoleCorrXYZ[idp];
+        _cdipoleX_total[idp]   += DipoleCorrX[idp];
+        _cdipoleY_total[idp]   += DipoleCorrY[idp];
+        _cdipoleZ_total[idp]   += DipoleCorrZ[idp];
+        _cdipoleXY_total[idp]  += DipoleCorrXY[idp];
+    }
+#endif
 
 	double srot;
 	if (ROTATION)
@@ -1256,6 +1343,10 @@ void MCGetAveragePIMC(void)
 	     GetRCF(); 
 
 	}
+
+	double stotal     = skin + srot + spot;
+	_btotal          += stotal;                   // kin+pot
+	_total           += stotal;
 
 #ifdef IOWRITE
 // accumulate terms for Cv
@@ -1417,27 +1508,11 @@ void MCSaveBlockAverages(long int blocknumb)
     	SaveRCF            (fname.c_str(),avergCount,MC_BLOCK); 
 	}
 #endif
-
-//
-#ifdef PIMCTYPE
-	SaveEnergy(MCFileName.c_str(),avergCount,blocknumb);
-#endif
-//
-#ifdef PIGSTYPE
 	SaveEnergy(MCFileName.c_str(),avergCount,blocknumb);
 	SaveAngularDOF(MCFileName.c_str(),avergCount,blocknumb);
+#ifdef DDCORR
 	SaveDipoleCorr(MCFileName.c_str(),avergCount,blocknumb);
 #endif
-//
-#ifdef PIGSENTTYPE
-    SaveTrReducedDens(MCFileName.c_str(),avergCount,blocknumb);
-#ifdef PIGSENTBOTH
-	SaveEnergy(MCFileName.c_str(),avergCountENT,blocknumb);
-	SaveAngularDOF(MCFileName.c_str(),avergCountENT,blocknumb);
-	SaveDipoleCorr(MCFileName.c_str(),avergCountENT,blocknumb);
-#endif
-#endif
-//
 
 #ifdef IOWRITE
 	if (BOSONS) 
@@ -1460,6 +1535,27 @@ void MCSaveBlockAverages(long int blocknumb)
 #endif
 
 }
+
+#ifdef PIGSENTTYPE
+void MCSaveBlockAveragesPIGSENT(long int blocknumb) 
+{
+  	const char *_proc_=__func__;    //   MCSaveBlockAverages()
+
+  	stringstream bc;                // convert block # to string
+  	bc.width(IO_BLOCKNUMB_WIDTH); 
+  	bc.fill('0');
+  	bc<<blocknumb;
+
+  	string fname = MCFileName + bc.str();  // file name prefix including block #
+
+	SaveEnergy(MCFileName.c_str(),avergCountENT,blocknumb);
+	SaveAngularDOF(MCFileName.c_str(),avergCountENT,blocknumb);
+#ifdef DDCORR
+	SaveDipoleCorr(MCFileName.c_str(),avergCountENT,blocknumb);
+#endif
+    SaveTrReducedDens(MCFileName.c_str(),avergCount,blocknumb);
+}
+#endif
 
 void SaveEnergy (const char fname [], double acount, long int blocknumb)
 {
@@ -1525,6 +1621,7 @@ void SaveEnergy (const char fname [], double acount, long int blocknumb)
     fid.close();
 }
 
+#ifdef DDCORR
 void SaveDipoleCorr(const char fname [], double acount, long int blocknumb)
 {
     const char *_proc_=__func__;    
@@ -1544,11 +1641,12 @@ void SaveDipoleCorr(const char fname [], double acount, long int blocknumb)
 	{
    		fid << setw(IO_WIDTH_BLOCK) << blocknumb  << BLANK;   
 #ifdef PIGSENTBOTH
-		int NumbAtoms1 =NumbAtoms/2;
-		int NDIMDP = NumbAtoms1*(NumbAtoms1-1)/2;
+		int NumbAtoms1 = NumbAtoms/2;
 #else
-		int NDIMDP = NumbAtoms*(NumbAtoms-1)/2;
+		int NumbAtoms1 = NumbAtoms;
 #endif
+		int NDIMDP = NumbAtoms1*(NumbAtoms1+1)/2;
+
 		for (int idp = 0; idp < NDIMDP; idp++)
 		{ 
     		fid << setw(IO_WIDTH) << _cdipoleXYZ[idp]/acount<< BLANK;
@@ -1573,6 +1671,7 @@ void SaveDipoleCorr(const char fname [], double acount, long int blocknumb)
 	}
     fid.close();
 }
+#endif
 
 void SaveAngularDOF(const char fname [], double acount, long int blocknumb)
 {
@@ -1691,12 +1790,19 @@ void SaveSumEnergy (double acount, double numb)  // global average
 	_feng << endl;
 }
 
+#ifdef DDCORR
 void SaveSumDipoleCorr(double acount, double numb)
 {
     const char *_proc_=__func__;
 
     _fdc << setw(IO_WIDTH_BLOCK) << numb <<BLANK;
-	int NDIMDP = NumbAtoms*(NumbAtoms-1)/2;
+#ifdef PIGSENTBOTH
+	int NumbAtoms1 = NumbAtoms/2;
+#else
+	int NumbAtoms1 = NumbAtoms;
+#endif
+	int NDIMDP = NumbAtoms1*(NumbAtoms1+1)/2;
+
 	for (int idp = 0; idp < NDIMDP; idp++)
 	{ 
     	_fdc << setw(IO_WIDTH) << _cdipoleXYZ_total[idp]/acount << BLANK;
@@ -1719,6 +1825,7 @@ void SaveSumDipoleCorr(double acount, double numb)
 	}
     _fdc << endl;
 }
+#endif
 
 void SaveSumAngularDOF(double acount, double numb)
 {
@@ -1736,55 +1843,65 @@ void SaveInstantAngularDOF(long int numb)
 {
     const char *_proc_=__func__;
 
-
 #ifdef PIGSENTTYPE
-    double* scostheta;
-   	_fangins << setw(IO_WIDTH) << numb << BLANK;
-    scostheta = GetCosThetaEntanglement();
-    double* sphi;
-    sphi = GetPhiEntanglement();
-	for (int i = 0; i < (2*NumbAtoms*NDIM); i++)
-	{
-    	_fangins << setw(IO_WIDTH) << scostheta[i] << BLANK;
-	}
-	for (int i = 0; i < (2*NumbAtoms); i++)
-	{
-    	_fangins << setw(IO_WIDTH) << sphi[i] << BLANK;
-	}
-    delete[] sphi;
-    double snm        = GetEstimNM();
-    double sdm        = GetEstimDM();
-    _fangins << setw(IO_WIDTH) << snm << BLANK;
-    _fangins << setw(IO_WIDTH) << sdm << BLANK;
-    _fangins << setw(IO_WIDTH) << snm/sdm << BLANK;
-    delete[] scostheta;
+	for (int atom0 = 0; atom0 < NumbAtoms; atom0++)
+   	{
+   		for (int it = ((NumbRotTimes - 1)/2-1); it <= ((NumbRotTimes-1)/2); it++) 
+		{
+        	int offset0 = MCAtom[IMTYPE].offset + NumbRotTimes*atom0;
+            int t0      = offset0 + it;
+
+			_fangins << setw(IO_WIDTH) << MCCosine[2][t0] << BLANK;
+        }
+    }
+	_fangins << endl;
 #endif
 //
 #ifdef PIMCTYPE
-    double* scostheta;
-   	_fangins << setw(IO_WIDTH) << numb << BLANK;
-    scostheta = GetProdUvec12();
-	for (int i = 0; i < (2*NumbRotTimes*NumbAtoms); i++)
-	{
-    	_fangins << setw(IO_WIDTH) << scostheta[i] << BLANK;
-	}
-    delete[] scostheta;
+   	_fanginsc << setw(IO_WIDTH) << numb << BLANK;
+	double cosTheta   = 0.0;
+	double compxyz[NDIM];
+	compxyz[0] = 0.0;
+	compxyz[1] = 0.0;
+	compxyz[2] = 0.0;
+
+	GetCosThetaPIMC(cosTheta, compxyz); //Centroid distribution
+   	_fanginsc << setw(IO_WIDTH) << cosTheta << BLANK;
+   	_fanginsc << setw(IO_WIDTH) << compxyz[0] << BLANK;
+   	_fanginsc << setw(IO_WIDTH) << compxyz[1] << BLANK;
+   	_fanginsc << setw(IO_WIDTH) << compxyz[2] << BLANK;
+    _fanginsc << endl;
+//
+   	//_fangins << setw(IO_WIDTH) << numb << BLANK;
+	for (int atom0 = 0; atom0 < NumbAtoms; atom0++)
+   	{
+   		for (int it = 0; it < NumbRotTimes; it++) // Rotational Time slices, P
+		{
+        	int offset0 = MCAtom[IMTYPE].offset + NumbRotTimes*atom0;
+            int t0      = offset0 + it;
+
+			_fangins << setw(IO_WIDTH) << MCCosine[0][t0] << BLANK;
+			_fangins << setw(IO_WIDTH) << MCCosine[1][t0] << BLANK;
+			_fangins << setw(IO_WIDTH) << MCCosine[2][t0] << BLANK;
+			_fangins << endl;
+        }
+    }
 #endif
 
-#ifdef IOWRITE
 #ifdef PIGSTYPE
 #ifdef BINARY
 	double instArray[5];
 	instArray[0] = numb;
 	double cosTheta   = 0.0;
 	double compxyz[NDIM];
-	GetCosTheta(cosTheta, compxyz);
+	GetCosThetaPIGS(cosTheta, compxyz);
 	instArray[1] = cosTheta;
 	instArray[2] = compxyz[0];
 	instArray[3] = compxyz[1];
 	instArray[4] = compxyz[2];
 	_fangins.write((char*)instArray, 5*sizeof(double));
 #else
+#ifndef GAUSSIANMOVE
    	_fangins << setw(IO_WIDTH) << numb << BLANK;
 	double cosTheta   = 0.0;
 	double compxyz[NDIM];
@@ -1792,36 +1909,34 @@ void SaveInstantAngularDOF(long int numb)
 	compxyz[1] = 0.0;
 	compxyz[2] = 0.0;
 
-	GetCosTheta(cosTheta, compxyz);
+	GetCosThetaPIGS(cosTheta, compxyz);
    	_fangins << setw(IO_WIDTH) << cosTheta << BLANK;
    	_fangins << setw(IO_WIDTH) << compxyz[0] << BLANK;
    	_fangins << setw(IO_WIDTH) << compxyz[1] << BLANK;
    	_fangins << setw(IO_WIDTH) << compxyz[2] << BLANK;
-#endif 
-#endif 
-#endif 
-#ifdef NEWDENSITY
+    _fangins << endl;
+#else
    	_fangins << setw(IO_WIDTH) << numb << BLANK;
 	int it = (NumbTimes - 1)/2;
 	int atom0 = 0;
 	int t0 = it + atom0*NumbTimes;
 	for (int id = 0; id < NDIM; id++)
 	{
-   		_fangins << setw(IO_WIDTH) << MCCoords[id][t0]/BOHRRADIUS<< BLANK;
+   		_fangins << setw(IO_WIDTH) << MCCoords[id][t0]<< BLANK;
 	}
 	for (int id = 0; id < NDIM; id++)
 	{
-   		_fangins << setw(IO_WIDTH) << MCCoords[id][0]/BOHRRADIUS<< BLANK;
+   		_fangins << setw(IO_WIDTH) << MCCoords[id][0]<< BLANK;
 	}
 	for (int id = 0; id < NDIM; id++)
 	{
-   		_fangins << setw(IO_WIDTH) << MCCoords[id][NumbTimes-1]/BOHRRADIUS<< BLANK;
+   		_fangins << setw(IO_WIDTH) << MCCoords[id][NumbTimes-1]<< BLANK;
 	}
+   	_fangins << endl;
 #endif
-
-#ifndef BINARY
-    _fangins << endl;
 #endif 
+#endif 
+
 }
 
 void SaveInstantEnergy()
@@ -1848,6 +1963,18 @@ void SaveInstantEnergy()
     _fengins << setw(IO_WIDTH) << srotinst << BLANK;
     _fengins << endl;
 }
+
+#ifdef SWAPTOUNSWAP
+void SaveInstantSwap(double numbSwap, double numbUnSwap, long int numb)
+{
+    const char *_proc_=__func__;
+
+    _fswap << setw(IO_WIDTH) << numb << BLANK;
+    _fswap << setw(IO_WIDTH) << numbUnSwap << BLANK;
+    _fswap << setw(IO_WIDTH) << numbSwap << BLANK;
+    _fswap << endl;
+}
+#endif
 
 void SaveSumTrReducedDens(double acount, double numb)
 {
@@ -1878,7 +2005,13 @@ void InitTotalAverage(void)  // DUMP
 	_ucompx_total  = 0.0;
 	_ucompy_total  = 0.0;
 	_ucompz_total  = 0.0;
-	int NDIMDP = NumbAtoms*(NumbAtoms-1)/2;
+#ifdef PIGSENTBOTH
+	int NumbAtoms1 = NumbAtoms/2;
+#else
+	int NumbAtoms1 = NumbAtoms;
+#endif
+	int NDIMDP = NumbAtoms1*(NumbAtoms1+1)/2;
+
     _cdipoleXYZ_total.resize(NDIMDP);
     _cdipoleX_total.resize(NDIMDP);
     _cdipoleY_total.resize(NDIMDP);
@@ -1909,24 +2042,8 @@ void InitTotalAverage(void)  // DUMP
 
 	// open files for output
 	// ENERGY
-
-#ifdef PIMCTYPE
-	string fenergy;
-
-	fenergy  = MCFileName + IO_SUM; 
-	fenergy += IO_EXT_ENG; 
- 
-	if (FileExist(fenergy.c_str()))   // backup the output of previous simulations 
-	IOFileBackUp(fenergy.c_str());
-
-	_feng.open(fenergy.c_str(), ios::out);
-	io_setout(_feng);
-
-	if (!_feng.is_open())
-	_io_error(_proc_,IO_ERR_FOPEN,fenergy.c_str());
-#endif
 //
-#ifdef PIGSTYPE
+#ifndef PIGSENTTYPE
 	string fenergy;
 
 	fenergy  = MCFileName + IO_SUM; 
@@ -1957,6 +2074,7 @@ void InitTotalAverage(void)  // DUMP
     _io_error(_proc_,IO_ERR_FOPEN,fangular.c_str());
 
 //
+#ifdef DDCORR
     string fdipolecorr;
 
     fdipolecorr  = MCFileName + IO_SUM;
@@ -1970,9 +2088,31 @@ void InitTotalAverage(void)  // DUMP
 
     if (!_fdc.is_open())
     _io_error(_proc_,IO_ERR_FOPEN,fdipolecorr.c_str());
+#endif
+#endif
 
 //
 #ifdef INSTANT
+#ifdef PIMCTYPE
+    string fangularinsc;
+
+    fangularinsc  = MCFileName + "_instant_centroid";
+    fangularinsc += ".dof";
+
+    if (FileExist(fangularinsc.c_str()))   // backup the output of previous simulations 
+    IOFileBackUp(fangularinsc.c_str());
+
+#ifdef BINARY
+    _fanginsc.open(fangularinsc.c_str(), ios::out | ios::binary);
+#else
+    _fanginsc.open(fangularinsc.c_str(), ios::out);
+#endif
+    io_setout(_fanginsc);
+
+    if (!_fanginsc.is_open())
+    _io_error(_proc_,IO_ERR_FOPEN,fangularinsc.c_str());
+#endif
+//
     string fangularins;
 
     fangularins  = MCFileName + "_instant";
@@ -2007,7 +2147,6 @@ void InitTotalAverage(void)  // DUMP
     if (!_fengins.is_open())
     _io_error(_proc_,IO_ERR_FOPEN,fenergyins.c_str());
 #endif
-#endif
 
 #ifdef PIGSENTTYPE
     string fentropy;
@@ -2025,20 +2164,20 @@ void InitTotalAverage(void)  // DUMP
     _io_error(_proc_,IO_ERR_FOPEN,fentropy.c_str());
 
 
-#ifdef PIGSENTBOTH
-    string fenergy;
+#ifdef INSTANT
+    string fswapins;
 
-    fenergy  = MCFileName + IO_SUM;
-    fenergy += IO_EXT_ENG;
+    fswapins  = MCFileName + "SwapUnSwapRatio";
+    fswapins += ".inst";
 
-    if (FileExist(fenergy.c_str()))   // backup the output of previous simulations 
-    IOFileBackUp(fenergy.c_str());
+    if (FileExist(fswapins.c_str()))   // backup the output of previous simulations
+    IOFileBackUp(fswapins.c_str());
 
-    _feng.open(fenergy.c_str(), ios::out);
-    io_setout(_feng);
+    _fswap.open(fswapins.c_str(), ios::out);
+    io_setout(_fswap);
 
-    if (!_feng.is_open())
-    _io_error(_proc_,IO_ERR_FOPEN,fenergy.c_str());
+    if (!_fswap.is_open())
+    _io_error(_proc_,IO_ERR_FOPEN,fswapins.c_str());
 #endif
 #endif
 }
@@ -2096,15 +2235,13 @@ void MCSaveAcceptRatio(long int step,long int pass,long int block)
    }
    else
    {
-      double ratio_molec = MCAccep[type][MCMOLEC]/MCTotal[type][MCMOLEC];
 #ifndef GAUSSIANMOVE
+      double ratio_molec = MCAccep[type][MCMOLEC]/MCTotal[type][MCMOLEC];
       double ratio_multi = MCAccep[type][MCMULTI]/MCTotal[type][MCMULTI];
-#endif
  
       cout<<setw(w)<<MCAtom[type].type<<BLANK; // atom type
 
       cout<<setw(w)<<ratio_molec<<BLANK;       // accept ratio for "molecular" move
-#ifndef GAUSSIANMOVE
       cout<<setw(w)<<ratio_multi<<BLANK;       // accept ratio for multilevel move 
 #endif
    }

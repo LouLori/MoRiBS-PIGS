@@ -43,6 +43,7 @@ examples/linear_pigs/FigureGenerator.pyc
 /examples/linear_pigs/*.dof
 /examples/linear_pigs/*.eng
 /examples/linear_pigs/*.rden
+/examples/linear_pigs/*.pdf
 /examples/linear_pigs/outpimc*
 /examples/linear_pigs/ts
 /examples/linear_pigs/*/

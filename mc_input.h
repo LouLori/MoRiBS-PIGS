@@ -69,6 +69,7 @@ const char IO_EXT_DMP[] = ".dump"; // extra extension for data dumps
 // ----------- ESTIMATORS ------------------------
 
 const char IO_EXT_GRA []    = ".gra";   // radial  pair distribution
+const char IO_EXT_GXYZ []    = ".gxyz";   // radial  pair distribution
 const char IO_EXT_GRI []    = ".gri";   // radial  density around impurity
 const char IO_EXT_GRT []    = ".grt";   // theta angular density around impurity
 const char IO_EXT_GRC []    = ".grc";   // chi angular density around impurity

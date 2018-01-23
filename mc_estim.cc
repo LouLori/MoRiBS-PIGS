@@ -41,6 +41,14 @@ double _delta_chi;              // \delta\chi   density distributions
 double _max_radius;             // max radius for density distributions
 double _min_radius;             // min radius for density distributions 
 
+#ifdef HISTOGRAM
+const int MC_BINSXYZ = 100;       // number of bins for radius original value=500
+double _delta_xyz;           // \delta r for density distributions    
+double _max_xyz;             // max radius for density distributions
+double _min_xyz;             // min radius for density distributions 
+double **   _gxyz1D;              // 1D radial distribution functions
+double **   _gxyz1D_sum;          // 1D radial distribution functions accumulated
+#endif
 double **   _gr1D;              // 1D radial distribution functions
 double **   _gr1D_sum;          // 1D radial distribution functions accumulated
 double ***  _gr2D;              // 2D distribution functions
@@ -62,6 +70,9 @@ void densities_mfree (void);
 void densities_reset (int);  //revised by Hui Li
 
 void bin_1Ddensity(double,int);
+#ifdef HISTOGRAM
+void binxyz_1Ddensity(double,int);
+#endif
 void bin_2Ddensity(double,double,int);
 void bin_3Ddensity(double,double,double,int);
 
@@ -293,6 +304,11 @@ void densities_init(void)
   _delta_theta  =  M_PI/(double)(MC_BINST - 1);
 // Toby adds chi bin
   _delta_chi    =  2.0*M_PI/(double)(MC_BINSC - 1);
+#ifdef HISTOGRAM
+  _max_xyz   = 1.0;
+  _min_radius  = -1.0;
+  _delta_xyz = (_max_xyz - _min_xyz)/(double)MC_BINSXYZ;
+#endif
 }
 
 void densities_malloc(void)
@@ -300,6 +316,10 @@ void densities_malloc(void)
 {
 	_gr1D  = doubleMatrix(NUMB_DENS1D,MC_BINSR);
 	_gr1D_sum  = doubleMatrix(NUMB_DENS1D,MC_BINSR);
+#ifdef HISTOGRAM
+	_gxyz1D  = doubleMatrix(NDIM,MC_BINSXYZ);
+	_gxyz1D_sum  = doubleMatrix(NDIM,MC_BINSXYZ);
+#endif
 
 	if (IMPURITY && (MCAtom[IMTYPE].molecule == 1))
     {
@@ -340,6 +360,10 @@ void densities_mfree(void)
 {
 	free_doubleMatrix(_gr1D);
    	free_doubleMatrix(_gr1D_sum);
+#ifdef HISTOGRAM
+	free_doubleMatrix(_gxyz1D);
+   	free_doubleMatrix(_gxyz1D_sum);
+#endif
    
    	if (IMPURITY && MCAtom[IMTYPE].molecule == 1)
    	{
@@ -386,6 +410,17 @@ void densities_reset(int mode)     //revised by Hui Li
 	 	if(mode == MC_TOTAL)
 	   	_gr1D_sum[id][ir] = 0.0;
     }
+#ifdef HISTOGRAM
+   	for (int id=0;id<NDIM;id++) 
+    for (int ixyz=0;ixyz<MC_BINSXYZ;ixyz++) 
+    {
+	 	if(mode == MC_BLOCK)
+	   	_gxyz1D[id][ixyz] = 0.0;
+
+	 	if(mode == MC_TOTAL)
+	   	_gxyz1D_sum[id][ixyz] = 0.0;
+    }
+#endif
 
    	if (IMPURITY && (MCAtom[IMTYPE].molecule == 1))
 	for (int id=0;id<NUMB_DENS2D;id++) 
@@ -610,17 +645,11 @@ double GetPotEnergy_Diff(void)
 
 double GetPotEnergyPIGS(void)
 {
-	const char *_proc_=__func__; //  GetPotEnergy_Densities()  
+	const char *_proc_=__func__; 
 
 #ifdef DEBUG_WORM
 	if (Worm.exists)
 	nrerror(_proc_," Only for Z-configurations");
-#endif
-
-#ifdef PIGSENTBOTH
-	int atomStart = NumbAtoms/2;
-#else
-	int atomStart = 0;
 #endif
 
     string stype = MCAtom[IMTYPE].type;
@@ -631,7 +660,7 @@ double GetPotEnergyPIGS(void)
 		double Eulang0[NDIM], Eulang1[NDIM];
 
         spot = 0.0;
-        for (int atom0=atomStart;atom0<(NumbAtoms-1);atom0++)
+        for (int atom0 = 0; atom0 < (NumbAtoms-1); atom0++)
 		{
            	int offset0 = NumbTimes*atom0;
            	int t0 = offset0 + it;
@@ -719,15 +748,16 @@ double GetPotEnergyPIGS(void)
     if ( (MCAtom[IMTYPE].molecule == 4) && (MCAtom[IMTYPE].numb == 1) )
     {
         int offset0 = 0;
-        int t0  = offset0 + it;
 #ifndef GAUSSIANMOVE
+        int t0  = offset0 + it;
         double E12     = -2.0*DipoleMomentAU2*MCCosine[2][t0]/(RR*RR*RR);
         spot    = E12*AuToKelvin;
 #else
+        int t0  = offset0 + (NumbTimes-1)/2;
         double spot3d = 0.0;
         for (int id = 0; id < NDIM; id++)
         {
-            spot3d += 0.5*MCCoords[id][t0]*MCCoords[id][t0]/(BOHRRADIUS*BOHRRADIUS);
+            spot3d += 0.5*MCCoords[id][t0]*MCCoords[id][t0];
         }
         spot   = spot3d;
 #endif
@@ -753,7 +783,7 @@ double GetPotEnergyPIGS(void)
 
 double GetPotEnergyPIGSENT(void)
 {
-	const char *_proc_=__func__; //  GetPotEnergy_Densities()  
+	const char *_proc_=__func__; 
 
 #ifdef DEBUG_WORM
 	if (Worm.exists)
@@ -1215,8 +1245,27 @@ double GetPotEnergy_Densities(void)
     }
 #endif
 	double spotReturn = spot + spot_cage;
-	return (spot/(double)NumbTimes);
+	return (spotReturn/(double)NumbTimes);
 }
+
+#ifdef HISTOGRAM
+void GetDensities(void)
+{
+	const char *_proc_=__func__; //  GetPotEnergy_Densities()  
+
+	for (int atom0 = 0; atom0<1; atom0++)
+	{
+		for (int it = 0; it < 1; it++)
+		{
+			int t0 = it + atom0*NumbRotTimes;
+			for (int id=0;id<NDIM;id++)
+			{
+       			binxyz_1Ddensity(MCCosine[id][t0],id);    // densities 
+			}
+		}
+	}
+}
+#endif
 
 #ifdef NEWDENSITY
 void GetDensities(void)
@@ -1256,18 +1305,12 @@ void GetDensitiesEndBeads(void)
 
 double GetTotalEnergy(void)
 {
-#ifdef PIGSENTBOTH
-	int atomStart = NumbAtoms/2;
-#else
-	int atomStart = 0;
-#endif
-
     string stype = MCAtom[IMTYPE].type;
 	double spot;
 	if ( (MCAtom[IMTYPE].molecule == 4) && (MCAtom[IMTYPE].numb > 1) )
 	{
         spot = 0.0;
-        for (int atom0=atomStart;atom0<(NumbAtoms-1);atom0++)
+        for (int atom0 = 0; atom0 < (NumbAtoms-1); atom0++)
 		{
            	int offset0 = NumbTimes*atom0;
 
@@ -1373,7 +1416,7 @@ double GetTotalEnergy(void)
 			double spot3d = 0.0;
 			for (int id = 0; id < NDIM; id++)
 			{
-            	spot3d += 0.5*MCCoords[id][t0]*MCCoords[id][t0]/(BOHRRADIUS*BOHRRADIUS);
+            	spot3d += 0.5*MCCoords[id][t0]*MCCoords[id][t0];
 			}
             spot   += spot3d;
 #endif
@@ -1382,7 +1425,7 @@ double GetTotalEnergy(void)
 
     double spot_cage = 0.0;
 #ifdef CAGEPOT
-    for (int atom0 = atomStart; atom0 < NumbAtoms; atom0++)
+    for (int atom0 = 0; atom0 < NumbAtoms; atom0++)
     {
         int offset0 = NumbTimes*atom0;
 
@@ -1595,20 +1638,112 @@ double GetRotEnergyPIGS(void)
     return (0.5*nslice*srot);
 }
 
-void GetCosTheta(double &cosTheta, double *compxyz)
+void GetCosThetaPIMC(double &cosTheta, double *compxyz)
+{
+    const char *_proc_=__func__;
+
+    // if user passed in a null pointer for array, bail out early!
+    if (!compxyz)
+        return;
+
+    double scosTheta;
+    double scompxyz[NDIM];
+
+    if(MCAtom[IMTYPE].numb > 1)
+    {
+        scosTheta      = 0.0;
+        for (int atom0 = 0; atom0 < (NumbAtoms - 1); atom0++)
+        {
+            for (int atom1 = (atom0 + 1); atom1 < NumbAtoms; atom1++)
+            {
+	            double sum_beads = 0.0;
+    	    	for (int it = 0; it < NumbRotTimes; it++) // Rotational Time slices, P
+        	    {
+                	int offset0 = MCAtom[IMTYPE].offset + NumbRotTimes*atom0;
+                    int offset1 = MCAtom[IMTYPE].offset + NumbRotTimes*atom1;
+
+                    int t0      = offset0 + it;
+                    int t1      = offset1 + it;
+
+                    double cst  = 0.0;
+                    for (int id = 0; id < NDIM; id++) // X, Y, Z
+                    {
+                        cst    += MCCosine[id][t0]*MCCosine[id][t1];
+                    }
+                    sum_beads += cst;
+                }
+                scosTheta   += sum_beads;
+            }     // LOOP OVER ATOM PAIRS
+        }
+        scompxyz[0] = 0.0;
+        scompxyz[1] = 0.0;
+        scompxyz[2] = 0.0;
+
+        for (int atom0 = 0; atom0 < NumbAtoms; atom0++)
+        {
+       		double sum_beadsx = 0.0;
+            double sum_beadsy = 0.0;
+            double sum_beadsz = 0.0;
+            for (int it = 0; it < NumbRotTimes; it++) // Rotational Time slices, P
+            {
+                int offset0 = MCAtom[IMTYPE].offset + NumbRotTimes*atom0;
+                int t0      = offset0 + it;
+
+                sum_beadsx += MCCosine[0][t0];
+                sum_beadsy += MCCosine[1][t0];
+                sum_beadsz += MCCosine[2][t0];
+            }
+            scompxyz[0] += sum_beadsx;
+            scompxyz[1] += sum_beadsy;
+            scompxyz[2] += sum_beadsz;
+        }
+    }
+    if(MCAtom[IMTYPE].numb == 1)
+    {
+        // Initial configurations //
+        double phi1  = 0.0;
+        double cost1 = 1.0;
+        double sint1 = sqrt(1.0 - cost1*cost1);
+
+        double uvec1[NDIM];
+        uvec1[0]     = sint1*cos(phi1);
+        uvec1[1]     = sint1*sin(phi1);
+        uvec1[2]     = cost1;
+
+        int atom0    = 0;
+        int type0    = MCType[atom0];
+        int offset0  = MCAtom[IMTYPE].offset + NumbRotTimes*atom0;
+        double sum_beads = 0.0;
+        for (int it = 0; it < NumbRotTimes; it++)
+        {
+            int tm0      = offset0 + it/RotRatio;
+
+            double cst   = 0.0;
+            for (int id = 0; id < NDIM; id++)
+            {
+                cst    += MCCosine[id][tm0]*uvec1[id];
+            }
+            sum_beads += cst;
+            scompxyz[0] = MCCosine[0][tm0];
+            scompxyz[1] = MCCosine[1][tm0];
+            scompxyz[2] = MCCosine[2][tm0];
+        }
+        scosTheta   = sum_beads;
+    }
+
+    cosTheta = scosTheta/NumbRotTimes;
+    compxyz[0] = scompxyz[0]/(NumbAtoms*NumbRotTimes);
+    compxyz[1] = scompxyz[1]/(NumbAtoms*NumbRotTimes);
+    compxyz[2] = scompxyz[2]/(NumbAtoms*NumbRotTimes);
+}
+
+void GetCosThetaPIGS(double &cosTheta, double *compxyz)
 {
     const char *_proc_=__func__; 
 
     // if user passed in a null pointer for array, bail out early!
     if (!compxyz)
         return;
-#ifdef PIGSENTBOTH
-	int atomStart = NumbAtoms/2;
-#else
-	int atomStart = 0;
-#endif
-
-
     int it = (NumbRotTimes - 1)/2;
 
 	double scosTheta;
@@ -1617,7 +1752,7 @@ void GetCosTheta(double &cosTheta, double *compxyz)
 	if(MCAtom[IMTYPE].numb > 1)
 	{
         scosTheta    = 0.0;
-    	for (int atom0 = atomStart; atom0 < (NumbAtoms-1); atom0++)
+    	for (int atom0 = 0; atom0 < (NumbAtoms-1); atom0++)
         {    
     	    for (int atom1 = (atom0+1); atom1 < NumbAtoms; atom1++)
     	    {
@@ -1636,18 +1771,17 @@ void GetCosTheta(double &cosTheta, double *compxyz)
     		}     // LOOP OVER ATOM PAIRS
 		}
 
-		scompxyz[0] = 0.0;
-		scompxyz[1] = 0.0;
-		scompxyz[2] = 0.0;
+		for (int id = 0; id<NDIM; id++)
+		{
+			double sum = 0.0;
+    		for (int atom0 = 0; atom0 < NumbAtoms; atom0++)
+        	{    
+           		int offset0 = MCAtom[IMTYPE].offset + NumbRotTimes*atom0;
+       			int t0      = offset0 + it;
 
-    	for (int atom0 = atomStart; atom0 < NumbAtoms; atom0++)
-        {    
-            int offset0 = MCAtom[IMTYPE].offset + NumbRotTimes*atom0;
-       		int t0      = offset0 + it;
-
-			scompxyz[0] += MCCosine[0][t0];
-			scompxyz[1] += MCCosine[1][t0];
-			scompxyz[2] += MCCosine[2][t0];
+				sum += MCCosine[id][t0];
+			}
+			scompxyz[id] = sum;
 		}
 	}
 	if(MCAtom[IMTYPE].numb == 1)
@@ -1679,9 +1813,10 @@ void GetCosTheta(double &cosTheta, double *compxyz)
 	}
 
 	cosTheta = scosTheta;
-	compxyz[0] = scompxyz[0]/NumbAtoms;
-	compxyz[1] = scompxyz[1]/NumbAtoms;
-	compxyz[2] = scompxyz[2]/NumbAtoms;
+	for (int id = 0; id < NDIM; id++)
+	{
+		compxyz[id] = scompxyz[id]/NumbAtoms;
+	}
 }
 
 void GetCosThetaPIGSENT(double &cosTheta, double *compxyz)
@@ -1765,14 +1900,69 @@ void GetCosThetaPIGSENT(double &cosTheta, double *compxyz)
 	compxyz[2] = scompxyz_sector[2]/NumbAtoms;
 }
 
-void GetDipoleCorrelation(double *DipoleCorrXYZ, double *DipoleCorrX, double *DipoleCorrY, double *DipoleCorrZ, double *DipoleCorrXY)
+#ifdef DDCORR
+void GetDipoleCorrelationPIMC(double *DipoleCorrXYZ, double *DipoleCorrX, double *DipoleCorrY, double *DipoleCorrZ, double *DipoleCorrXY)
 {
     const char *_proc_=__func__; 
-#ifdef PIGSENTBOTH
-	int atomStart = NumbAtoms/2;
-#else
-	int atomStart = 0;
+
+	if(MCAtom[IMTYPE].numb > 1)
+	{
+        double totalCorr, xCorr, yCorr, zCorr, xyCorr;
+
+		int ii = 0;
+    	for (int atom0 = 0; atom0 < (NumbAtoms - 1); atom0++)
+        {    
+    	    for (int atom1 = (atom0 + 1); atom1 < NumbAtoms; atom1++)
+    	    {
+            	int offset0 = MCAtom[IMTYPE].offset + NumbRotTimes*atom0;
+            	int offset1 = MCAtom[IMTYPE].offset + NumbRotTimes*atom1;
+
+            	totalCorr   = 0.0;
+				xyCorr      = 0.0;
+				xCorr       = 0.0;
+				yCorr       = 0.0;
+				zCorr       = 0.0;
+
+#pragma omp parallel for reduction(+: totalCorr, xyCorr, xCorr, yCorr, zCorr)
+				for (int it = 0; it < NumbRotTimes; it++)
+				{
+       	    		int t0      = offset0 + it;
+            		int t1      = offset1 + it;
+
+					double totalCorrid = 0.0;
+					double xyCorrid    = 0.0;
+               		for (int id = 0; id < NDIM; id++)
+               		{    
+           	    		totalCorrid += MCCosine[id][t0]*MCCosine[id][t1];
+						if (id <= 1)
+						{
+           	    			xyCorrid += MCCosine[id][t0]*MCCosine[id][t1];
+						}
+               		}
+
+           	    	totalCorr += totalCorrid;
+           	    	xyCorr    += xyCorrid;
+               		xCorr     += MCCosine[0][t0]*MCCosine[0][t1];
+               		yCorr     += MCCosine[1][t0]*MCCosine[1][t1];
+               		zCorr     += MCCosine[2][t0]*MCCosine[2][t1];
+
+               		DipoleCorrXYZ[ii] = totalCorr/NumbRotTimes;
+               		DipoleCorrX[ii]   = xCorr/NumbRotTimes;
+               		DipoleCorrY[ii]   = yCorr/NumbRotTimes;
+               		DipoleCorrZ[ii]   = zCorr/NumbRotTimes;
+               		DipoleCorrXY[ii]  = xyCorr/NumbRotTimes;
+				}
+				ii++;
+    		}
+		}
+	}
+}
 #endif
+
+#ifdef DDCORR
+void GetDipoleCorrelationPIGS(double *DipoleCorrXYZ, double *DipoleCorrX, double *DipoleCorrY, double *DipoleCorrZ, double *DipoleCorrXY)
+{
+    const char *_proc_=__func__; 
 
     int it = (NumbRotTimes - 1)/2;
 	if(MCAtom[IMTYPE].numb > 1)
@@ -1780,9 +1970,9 @@ void GetDipoleCorrelation(double *DipoleCorrXYZ, double *DipoleCorrX, double *Di
         double totalCorr, xCorr, yCorr, zCorr, xyCorr;
 
 		int ii = 0;
-    	for (int atom0 = atomStart; atom0 < (NumbAtoms - 1); atom0++)
+    	for (int atom0 = 0; atom0 < NumbAtoms; atom0++)
         {    
-    	    for (int atom1 = (atom0 + 1); atom1 < NumbAtoms; atom1++)
+    	    for (int atom1 = atom0; atom1 < NumbAtoms; atom1++)
     	    {
             	int offset0 = MCAtom[IMTYPE].offset + NumbRotTimes*atom0;
             	int offset1 = MCAtom[IMTYPE].offset + NumbRotTimes*atom1;
@@ -1791,7 +1981,6 @@ void GetDipoleCorrelation(double *DipoleCorrXYZ, double *DipoleCorrX, double *Di
             	int t1      = offset1 + it;
 
                	totalCorr   = 0.0;
-				xyCorr      = 0.0;
                	for (int id = 0; id < NDIM; id++)
                	{    
            	    	totalCorr += MCCosine[id][t0]*MCCosine[id][t1];
@@ -1801,6 +1990,7 @@ void GetDipoleCorrelation(double *DipoleCorrXYZ, double *DipoleCorrX, double *Di
                	yCorr   = MCCosine[1][t0]*MCCosine[1][t1];
                	zCorr   = MCCosine[2][t0]*MCCosine[2][t1];
 
+				xyCorr      = 0.0;
                	for (int id = 0; id < (NDIM-1); id++)
 				{
            	    	xyCorr += MCCosine[id][t0]*MCCosine[id][t1];
@@ -1815,7 +2005,9 @@ void GetDipoleCorrelation(double *DipoleCorrXYZ, double *DipoleCorrX, double *Di
 		}
 	}
 }
+#endif
 
+#ifdef DDCORR
 void GetDipoleCorrelationPIGSENT(double *DipoleCorrXYZ, double *DipoleCorrX, double *DipoleCorrY, double *DipoleCorrZ, double *DipoleCorrXY)
 {
     const char *_proc_=__func__; 
@@ -1839,9 +2031,9 @@ void GetDipoleCorrelationPIGSENT(double *DipoleCorrXYZ, double *DipoleCorrX, dou
 			}
 
 			int ii = 0;
-    		for (int atom0 = atomStart; atom0 < (atomEnd - 1); atom0++)
+    		for (int atom0 = atomStart; atom0 < atomEnd; atom0++)
         	{    
-    	    	for (int atom1 = (atom0 + 1); atom1 < atomEnd; atom1++)
+    	    	for (int atom1 = atom0; atom1 < atomEnd; atom1++)
     	    	{
             		int offset0 = MCAtom[IMTYPE].offset + NumbRotTimes*atom0;
             		int offset1 = MCAtom[IMTYPE].offset + NumbRotTimes*atom1;
@@ -1850,7 +2042,6 @@ void GetDipoleCorrelationPIGSENT(double *DipoleCorrXYZ, double *DipoleCorrX, dou
             		int t1      = offset1 + it;
 
                		totalCorr   = 0.0;
-					xyCorr      = 0.0;
                		for (int id = 0; id < NDIM; id++)
                		{    
            	    		totalCorr += MCCosine[id][t0]*MCCosine[id][t1];
@@ -1860,6 +2051,7 @@ void GetDipoleCorrelationPIGSENT(double *DipoleCorrXYZ, double *DipoleCorrX, dou
                		yCorr   = MCCosine[1][t0]*MCCosine[1][t1];
                		zCorr   = MCCosine[2][t0]*MCCosine[2][t1];
 
+					xyCorr      = 0.0;
                		for (int id = 0; id < (NDIM-1); id++)
 					{
            	    		xyCorr += MCCosine[id][t0]*MCCosine[id][t1];
@@ -1875,6 +2067,7 @@ void GetDipoleCorrelationPIGSENT(double *DipoleCorrXYZ, double *DipoleCorrX, dou
 		}
 	}
 }
+#endif
 
 double *GetPhiEntanglement()
 {
@@ -3127,6 +3320,19 @@ void bin_1Ddensity(double r,int dtype)
    }
 }
 
+#ifdef HISTOGRAM
+void binxyz_1Ddensity(double xyz,int id)
+{
+   int bin_xyz = (int)floor((xyz-_min_xyz)/_delta_xyz);
+
+   if ((bin_xyz<MC_BINSXYZ) && (bin_xyz>=0))
+   {
+     _gxyz1D[id][bin_xyz] += 1.0;
+     _gxyz1D_sum[id][bin_xyz] += 1.0;
+   }
+}
+#endif
+
 void SaveGraSum(const char fname [], double acount)
 // accumulate sum for inter-atomic distribution.  should be similar to the pair distribution in SaveDensities1D
 {
@@ -3173,6 +3379,43 @@ void SaveGraSum(const char fname [], double acount)
 
   fid.close();
 }
+
+#ifdef HISTOGRAM
+void SaveGxyzSum(const char fname [], double acount)
+// accumulate sum for inter-atomic distribution.  should be similar to the pair distribution in SaveDensities1D
+{
+  fstream fid;
+  string fdens;
+
+  fdens  = fname;
+  fdens += IO_SUM;
+  fdens += IO_EXT_GXYZ;
+
+  fid.open(fdens.c_str(),ios::out); io_setout(fid);
+
+  double norma = _delta_xyz*acount;
+
+  double xyz;
+
+  for (int ixyz=0;ixyz<MC_BINSXYZ;ixyz++)
+  {
+     xyz   =  (double)ixyz*_delta_xyz;
+     xyz  +=  (0.5*_delta_xyz);
+     xyz  +=  _min_xyz;
+
+     fid<<setw(IO_WIDTH)<<xyz<<BLANK;
+
+     for (int id=0;id<NDIM;id++)
+     {
+        fid <<setw(IO_WIDTH)<<_gxyz1D_sum[id][ixyz]/norma<<BLANK;   // gra_sum
+     }
+
+     fid<<endl;
+  }
+
+  fid.close();
+}
+#endif
 
 void SaveDensities1D(const char fname [], double acount)
 // the density type corresponds to the atom type

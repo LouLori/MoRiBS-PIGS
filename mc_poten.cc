@@ -1010,3 +1010,50 @@ void read_datafile(const char fname[],double *grid,double *data0,double *data1,d
 // nrerror(_proc_,"Wrong size of data file");
    fid.close();
 }
+
+#ifdef PAIRDENSITY
+void readPairDensity(void)
+{
+    ifstream f("PairDensity.txt");
+
+    int size_total, block_numb, size;
+    f >> size_total>>block_numb;
+    f >> size;
+
+    int *basisIndices = new int[4*size];
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < 4; j++) {
+            f >> basisIndices[i*4+j];
+        }
+    }
+
+    double *densityMatrix = new double[size*size];
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            f >> densityMatrix[i*size+j];
+        }
+    }
+
+    f.close();
+
+    cout << "Size TAPAS = "<<size << endl;
+
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < 4; j++) {
+            cout << basisIndices[i*4+j] << " ";
+        }
+        cout << endl;
+    }
+
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            cout << densityMatrix[i*size+j] << " ";
+        }
+        cout << endl;
+    }
+
+    delete[] basisIndices;
+    delete[] densityMatrix;
+	exit(1);
+}
+#endif

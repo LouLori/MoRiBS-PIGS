@@ -38,6 +38,8 @@ extern int     NUMB_MOLCTYPES; // total number of molecules types
 extern string  Distribution;
 extern double  MCAccepSwap;
 extern double  MCAccepUnSwap;
+extern int     iSwap;
+extern int     iUnSwap;
 extern double DipoleMomentAU2;
 extern double RR;
 #ifdef PROPOSED
